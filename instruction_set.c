@@ -12,10 +12,13 @@ size_t get_instruction_size(Instruction inst) {
         case CALL:
             return 2;
         case PUSH:
+        case POP:
         case INC:
         case DEC:
             return 4;
         case MOV:
+        case LD:
+        case ST:
             return 7;
     }
 
@@ -27,9 +30,9 @@ Instruction parse_instruction(CPU *cpu) {
 
     inst.opcode = cpu->memory[cpu->pc];
     inst.mode1 = cpu->memory[cpu->pc + 1];
-    inst.operand1 = cpu->memory[cpu->pc + 2] | (cpu->memory[cpu->pc + 3] << 8);
+    inst.operand1 = (cpu->memory[cpu->pc + 2] << 8) | cpu->memory[cpu->pc + 3];
     inst.mode2 = cpu->memory[cpu->pc + 4];
-    inst.operand2 = cpu->memory[cpu->pc + 5] | (cpu->memory[cpu->pc + 6] << 8);
+    inst.operand2 = (cpu->memory[cpu->pc + 5] << 8) | cpu->memory[cpu->pc + 6];
 
     return inst;
 }
@@ -42,13 +45,27 @@ int exec_instruction(CPU *cpu, Instruction inst) {
 
     switch (inst.opcode) {
         case MOV: {
-            if (inst.mode1 != MODE_VAL_IND || (inst.operand1 < R0 || inst.operand1 > R7))
-                return 1;
+            bool isSP = false;
+
+            if (inst.mode1 != MODE_VAL_IND || (inst.operand1 < R0 || inst.operand1 > R7)) {
+                if (inst.operand1 != SP)
+                    return 1;
+                else {
+                    isSP = true;
+                }
+            }
             
-            if (inst.mode2 == MODE_VAL_IMM)
-                cpu->registers[inst.operand1] = inst.operand2;
-            else
-                cpu->registers[inst.operand1] = cpu->registers[inst.operand2];
+            if (inst.mode2 == MODE_VAL_IMM) {
+                if (isSP)
+                    cpu->sp = inst.operand2;
+                else
+                    cpu->registers[inst.operand1] = inst.operand2;
+            } else {
+                if (isSP)
+                    cpu->sp = cpu->registers[inst.operand2];
+                else
+                    cpu->registers[inst.operand1] = cpu->registers[inst.operand2];
+            }
 
             break;
         }
@@ -58,6 +75,34 @@ int exec_instruction(CPU *cpu, Instruction inst) {
                 return 1;
             
             cpu->registers[inst.operand1] = cpu->memory[inst.operand2];
+
+            break;
+        }
+
+        case ST: {
+            if (inst.mode1 != MODE_VAL_IND || (inst.operand1 >= R0 && inst.operand1 <= R7))
+                return 1;
+            
+            cpu->memory[inst.operand1] = (inst.mode2 == MODE_VAL_IMM) ? inst.operand2 : cpu->registers[inst.operand2];
+            
+            break;
+        }
+
+        case PUSH: {
+            uint16_t value;
+
+            value = (inst.mode1 == MODE_VAL_IND) ? ((inst.operand1 >= R0 && inst.operand1 <= R7) ? cpu->registers[inst.operand1] : (cpu->memory[inst.operand1] | cpu->memory[inst.operand1 + 1] << 8)) : inst.operand1;
+            
+            cpu_push(cpu, value);
+
+            break;
+        }
+
+        case POP: {
+            if (inst.mode1 != MODE_VAL_IND || (inst.operand1 < R0 || inst.operand1 > R7))
+                return 1;
+            
+            cpu->registers[inst.operand1] = cpu_pop(cpu);
 
             break;
         }

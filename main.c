@@ -1,20 +1,77 @@
+#include <stdlib.h>
 #include <stdio.h>
 #include "cpu.h"
 #include "instruction_set.h"
 
-int main() {
-    uint8_t program[] = {
-        MOV, MODE_VAL_IND, R0, 0x00, MODE_VAL_IMM, 0x03, 0x00,
-        MOV, MODE_VAL_IND, R1, 0x00, MODE_VAL_IND, R0, 0x00,
-        MOV, MODE_VAL_IND, R7, 0x00, MODE_VAL_IMM, 0x41, 0x00,
-        HLT,
-        0x88, 0xcc
-    };
+uint8_t *read_file(const char *filename, size_t *size) {
+    FILE *file = fopen(filename, "rb");
+
+    if (!file) {
+        fprintf(stderr, "Could not open file %s\n", filename);
+
+        return NULL;
+    }
+
+    fseek(file, 0, SEEK_END);
+
+    long file_size = ftell(file);
+
+    fseek(file, 0, SEEK_SET);
+
+    if (file_size <= 0) {
+        fprintf(stderr, "Empty or invalid file\n");
+        fclose(file);
+
+        return NULL;
+    }
+
+    uint8_t *buffer = (uint8_t*)malloc(file_size);
+
+    if (!buffer) {
+        fprintf(stderr, "Memory allocation failed\n");
+        fclose(file);
+
+        return NULL;
+    }
+
+    size_t bytes_read = fread(buffer, 1, file_size, file);
+    
+    fclose(file);
+
+    if (bytes_read != file_size) {
+        fprintf(stderr, "Failed to read entire file\n");
+        free(buffer);
+
+        return NULL;
+    }
+
+    *size = bytes_read;
+    
+    return buffer;
+}
+
+int main(int argc, char* argv[]) {
+    if (argc != 2) {
+        printf("Usage: %s <filename>\n", argv[0]);
+
+        return 1;
+    }
+
+    size_t size = 0;
+    uint8_t *data = read_file(argv[1], &size);
+
+    if (!data) {
+        fprintf(stderr, "Failed to read file\n");
+
+        return 1;
+    }
+
+    printf("Searching for bootable program...\n");
 
     CPU cpu;
 
     init_cpu(&cpu);
-    int load_status = load_program(&cpu, program, 24);
+    int load_status = load_program(&cpu, data, 55);
 
     if (load_status != 0) {
         printf("No bootable program found...\n");

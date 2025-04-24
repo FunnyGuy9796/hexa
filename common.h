@@ -16,6 +16,12 @@
 #define R5 0x05
 #define R6 0x06
 #define R7 0x07
+#define PC 0x08
+#define IP 0x09
+#define SP 0x0a
+#define FLAGS 0x0b
+
+#define START_ADDR 0x0100
 
 typedef struct {
     uint8_t opcode;
@@ -34,5 +40,8 @@ typedef struct {
     bool halted;
     uint8_t memory[MEM_SIZE];
 } CPU;
+
+void cpu_push(CPU *cpu, uint16_t val);
+uint16_t cpu_pop(CPU *cpu);
 
 #endif

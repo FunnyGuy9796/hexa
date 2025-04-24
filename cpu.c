@@ -15,11 +15,13 @@ void init_cpu(CPU *cpu) {
 }
 
 int load_program(CPU *cpu, uint8_t *program, size_t size) {
-    uint16_t start_addr = 0x100;
+    uint16_t start_addr = (program[0] << 8) | program[1];
 
     if (program[size - 1] == 0xcc && program[size - 2] == 0x88) {
+        printf("\n");
+        
         for (size_t i = 0; i < size - 2; i++) {
-            cpu->memory[start_addr + i] = program[i];
+            cpu->memory[start_addr + i] = program[i + 2];
 
             printf("%02x ", cpu->memory[start_addr + i]);
 
@@ -35,7 +37,7 @@ int load_program(CPU *cpu, uint8_t *program, size_t size) {
 }
 
 int exec_program(CPU *cpu) {
-    cpu->pc = 0x100;
+    cpu->pc = START_ADDR;
     cpu->ip = cpu->memory[cpu->pc];
     
     while (!cpu->halted) {
@@ -57,30 +59,22 @@ void cpu_exception(CPU *cpu, int status, Instruction inst) {
 
     cpu->halted = true;
 
-    cpu_push16(cpu, cpu->pc + inst_size);
-    cpu_push16(cpu, cpu->pc);
-    cpu_push8(cpu, cpu->ip);
-    cpu_push16(cpu, cpu->flags);
+    cpu_push(cpu, cpu->pc + inst_size);
+    cpu_push(cpu, cpu->pc);
+    cpu_push(cpu, cpu->ip);
+    cpu_push(cpu, cpu->flags);
 
     printf("Error: Exception occurred\n  status: %d\n", status);
 }
 
-void cpu_push8(CPU *cpu, uint8_t val) {
-    cpu->memory[--cpu->sp] = val;
-}
-
-void cpu_push16(CPU *cpu, uint16_t val) {
+void cpu_push(CPU *cpu, uint16_t val) {
     cpu->memory[--cpu->sp] = (uint8_t)(val & 0xff);
     cpu->memory[--cpu->sp] = (uint8_t)((val >> 8) & 0xff);
 }
 
-uint8_t cpu_pop8(CPU *cpu) {
-    return cpu->memory[cpu->sp++];
-}
-
-uint16_t cpu_pop16(CPU *cpu) {
-    uint8_t lo = cpu->memory[cpu->sp++];
+uint16_t cpu_pop(CPU *cpu) {
     uint8_t hi = cpu->memory[cpu->sp++];
+    uint8_t lo = cpu->memory[cpu->sp++];
 
     return (hi << 8) | lo;
 }
