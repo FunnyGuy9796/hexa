@@ -1,0 +1,12 @@
+total size: 64kb (65536 bytes)
+
+type:                           start:      end:        size:
+general purpose registers       0x0000      0x0007      8 bytes
+special registers               0x0008      0x000b      4 bytes
+interrupt vector table          0x000c      0x010b      256 bytes
+font bitmap                     0x010c      0x050b      1 kb
+text mode                       0x050c      0x0d0b      2 kb
+display                         0x0d0c      0x0d0d      2 byte (display status, display cmd)
+keyboard                        0x0d0e      0x0d10      3 bytes (key value, key status, key ctrl status)
+timer                           0x0d11      0x0d16      6 bytes (timer ctrl, timer status, counter L, counter H, compare L, compare H)
+usable memory                   0x0d17      0xffff      60.73 kb (62185 bytes)

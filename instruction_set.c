@@ -1,5 +1,9 @@
 #include "instruction_set.h"
 
+bool is_reg(uint16_t val) {
+    return val >= R0 && val <= R7;
+}
+
 size_t get_instruction_size(Instruction inst) {
     switch (inst.opcode) {
         case HLT:
@@ -47,7 +51,7 @@ int exec_instruction(CPU *cpu, Instruction inst) {
         case MOV: {
             bool isSP = false;
 
-            if (inst.mode1 != MODE_VAL_IND || (inst.operand1 < R0 || inst.operand1 > R7)) {
+            if (inst.mode1 != MODE_VAL_IND || !is_reg(inst.operand1)) {
                 if (inst.operand1 != SP)
                     return 1;
                 else {
@@ -71,7 +75,7 @@ int exec_instruction(CPU *cpu, Instruction inst) {
         }
 
         case LD: {
-            if (inst.mode1 != MODE_VAL_IND || (inst.operand1 < R0 || inst.operand1 > R7) || inst.mode2 != MODE_VAL_IND || (inst.operand2 >= R0 && inst.operand2 <= R7))
+            if (inst.mode1 != MODE_VAL_IND || !is_reg(inst.operand1) || inst.mode2 != MODE_VAL_IND || is_reg(inst.operand2))
                 return 1;
             
             cpu->registers[inst.operand1] = cpu->memory[inst.operand2];
@@ -80,7 +84,7 @@ int exec_instruction(CPU *cpu, Instruction inst) {
         }
 
         case ST: {
-            if (inst.mode1 != MODE_VAL_IND || (inst.operand1 >= R0 && inst.operand1 <= R7))
+            if (inst.mode1 != MODE_VAL_IND || is_reg(inst.operand1))
                 return 1;
             
             cpu->memory[inst.operand1] = (inst.mode2 == MODE_VAL_IMM) ? inst.operand2 : cpu->registers[inst.operand2];
@@ -91,7 +95,7 @@ int exec_instruction(CPU *cpu, Instruction inst) {
         case PUSH: {
             uint16_t value;
 
-            value = (inst.mode1 == MODE_VAL_IND) ? ((inst.operand1 >= R0 && inst.operand1 <= R7) ? cpu->registers[inst.operand1] : (cpu->memory[inst.operand1] | cpu->memory[inst.operand1 + 1] << 8)) : inst.operand1;
+            value = (inst.mode1 == MODE_VAL_IND) ? (is_reg(inst.operand1) ? cpu->registers[inst.operand1] : (cpu->memory[inst.operand1] | cpu->memory[inst.operand1 + 1] << 8)) : inst.operand1;
             
             cpu_push(cpu, value);
 
@@ -99,7 +103,7 @@ int exec_instruction(CPU *cpu, Instruction inst) {
         }
 
         case POP: {
-            if (inst.mode1 != MODE_VAL_IND || (inst.operand1 < R0 || inst.operand1 > R7))
+            if (inst.mode1 != MODE_VAL_IND || !is_reg(inst.operand1))
                 return 1;
             
             cpu->registers[inst.operand1] = cpu_pop(cpu);

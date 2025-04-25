@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 #include "cpu.h"
 #include "instruction_set.h"
 
@@ -51,14 +52,34 @@ uint8_t *read_file(const char *filename, size_t *size) {
 }
 
 int main(int argc, char* argv[]) {
-    if (argc != 2) {
-        printf("Usage: %s <filename>\n", argv[0]);
+    if (argc <= 0) {
+        printf("Options:\n  -f | Provides the emulator with a bootable file\n  -h | Displays this list\n");
+
+        return 0;
+    }
+
+    char *filename = NULL;
+    size_t bytes = 0;
+
+    for (int i = 0; i < argc; i++) {
+        if (strcmp(argv[i], "-f") == 0 && i + 1 < argc)
+            filename = argv[++i];
+        else if (strcmp(argv[i], "-h") == 0) {
+            printf("Options:\n  -f | Provides the emulator with a bootable file\n  -h | Displays this list\n");
+
+            return 0;
+        } else if (strcmp(argv[i], "-s") == 0)
+            bytes = strtoul(argv[++i], NULL, 0);
+    }
+
+    if (filename == NULL) {
+        fprintf(stderr, "No file provided\n  Use -h to see a list of all available options\n");
 
         return 1;
     }
 
     size_t size = 0;
-    uint8_t *data = read_file(argv[1], &size);
+    uint8_t *data = read_file(filename, &size);
 
     if (!data) {
         fprintf(stderr, "Failed to read file\n");
@@ -71,7 +92,7 @@ int main(int argc, char* argv[]) {
     CPU cpu;
 
     init_cpu(&cpu);
-    int load_status = load_program(&cpu, data, 55);
+    int load_status = load_program(&cpu, data, bytes);
 
     if (load_status != 0) {
         printf("No bootable program found...\n");

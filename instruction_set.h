@@ -6,9 +6,6 @@
 #include <stddef.h>
 #include "common.h"
 
-#define MODE_VAL_IMM 0x00
-#define MODE_VAL_IND 0x01
-
 enum ISA {
     MOV = 0x00,
     LD = 0x01,
