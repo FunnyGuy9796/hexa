@@ -24,7 +24,7 @@
 #define SP 0x0a
 #define FLAGS 0x0b
 
-#define START_ADDR 0x0d17
+#define START_ADDR 0x0d1c
 
 #define FLAG_EQUAL (1 << 0)
 #define FLAG_LESS (1 << 1)

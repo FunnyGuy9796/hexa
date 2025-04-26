@@ -1,5 +1,7 @@
 #include "instruction_set.h"
 
+bool pc_modified;
+
 bool is_reg(uint16_t val) {
     return val >= R0 && val <= R7;
 }
@@ -65,9 +67,9 @@ Instruction parse_instruction(CPU *cpu) {
 int exec_instruction(CPU *cpu, Instruction inst) {
     size_t inst_size = get_instruction_size(inst);
 
+    pc_modified = false;
     cpu->ip = inst.opcode;
-    printf("inst_opcode = 0x%02x  inst_size = %d\n  inst_mode1 = 0x%02x  inst_op1 = 0x%04x  inst_mode2 = 0x%02x  inst_op2 = 0x%04x\n", inst.opcode, inst_size, inst.mode1, inst.operand1, inst.mode2, inst.operand2);
-
+    
     switch (inst.opcode) {
         case MOV: {
             bool isSP = false;
@@ -213,12 +215,113 @@ int exec_instruction(CPU *cpu, Instruction inst) {
             uint16_t val1 = cpu->registers[inst.operand1];
             uint16_t val2 = (inst.mode2 == MODE_VAL_IND) ? (is_reg(inst.operand2) ? cpu->registers[inst.operand2] : (cpu->memory[inst.operand2] | cpu->memory[inst.operand2 + 1] << 8)) : inst.operand2;
             
+            cpu->flags &= ~(FLAG_EQUAL | FLAG_LESS | FLAG_GREATER | FLAG_ZERO);
+
             if (val1 == val2)
                 cpu->flags |= FLAG_EQUAL | FLAG_ZERO;
             else if (val1 < val2)
                 cpu->flags |= FLAG_LESS;
             else if (val1 > val2)
                 cpu->flags |= FLAG_GREATER;
+            
+            break;
+        }
+
+        case JMP: {
+            uint16_t jmp_addr = inst.operand1;
+
+            cpu->pc = jmp_addr;
+            pc_modified = true;
+
+            break;
+        }
+
+        case JZ: {
+            if (cpu->flags & FLAG_ZERO) {
+                uint16_t jmp_addr = inst.operand1;
+
+                cpu->pc = jmp_addr;
+                pc_modified = true;
+            }
+
+            break;
+        }
+
+        case JNZ: {
+            if (!(cpu->flags & FLAG_ZERO)) {
+                uint16_t jmp_addr = inst.operand1;
+
+                cpu->pc = jmp_addr;
+                pc_modified = true;
+            }
+
+            break;
+        }
+
+        case JE: {
+            if (cpu->flags & FLAG_EQUAL) {
+                uint16_t jmp_addr = inst.operand1;
+
+                cpu->pc = jmp_addr;
+                pc_modified = true;
+            }
+
+            break;
+        }
+
+        case JNE: {
+            if (!(cpu->flags & FLAG_EQUAL)) {
+                uint16_t jmp_addr = inst.operand1;
+
+                cpu->pc = jmp_addr;
+                pc_modified = true;
+            }
+
+            break;
+        }
+
+        case JL: {
+            if (cpu->flags & FLAG_LESS) {
+                uint16_t jmp_addr = inst.operand1;
+
+                cpu->pc = jmp_addr;
+                pc_modified = true;
+            }
+
+            break;
+        }
+
+        case JLE: {
+            if (cpu->flags & (FLAG_EQUAL | FLAG_LESS)) {
+                uint16_t jmp_addr = inst.operand1;
+
+                cpu->pc = jmp_addr;
+                pc_modified = true;
+            }
+
+            break;
+        }
+
+        case JG: {
+            if (cpu->flags & FLAG_GREATER) {
+                uint16_t jmp_addr = inst.operand1;
+
+                cpu->pc = jmp_addr;
+                pc_modified = true;
+            }
+
+            break;
+        }
+
+        case JGE: {
+            if (cpu->flags & (FLAG_EQUAL | FLAG_GREATER)) {
+                uint16_t jmp_addr = inst.operand1;
+                
+                cpu->pc = jmp_addr;
+                pc_modified = true;
+            }
+
+            break;
         }
 
         case HLT: {
@@ -232,7 +335,8 @@ int exec_instruction(CPU *cpu, Instruction inst) {
         }
     }
 
-    cpu->pc += inst_size;
+    if (!pc_modified)
+        cpu->pc += inst_size;
 
     return 0;
 }

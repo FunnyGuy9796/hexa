@@ -14,7 +14,7 @@ void init_cpu(CPU *cpu) {
         cpu->memory[i] = 0;
 }
 
-int load_program(CPU *cpu, uint8_t *program) {
+uint16_t load_program(CPU *cpu, uint8_t *program) {
     uint16_t start_addr = (program[0] << 8) | program[1];
     uint16_t size = (program[2] << 8) | program[3];
 
@@ -32,9 +32,9 @@ int load_program(CPU *cpu, uint8_t *program) {
 
         printf("\n\n");
         
-        return 0;
+        return size - 4;
     } else
-        return 1;
+        return 0;
 }
 
 int exec_program(CPU *cpu) {
@@ -65,7 +65,8 @@ void cpu_exception(CPU *cpu, int status, Instruction inst) {
     cpu_push(cpu, cpu->ip);
     cpu_push(cpu, cpu->flags);
 
-    printf("Error: Exception occurred\n  status: %d\n", status);
+    printf("\nError: Exception occurred\n  status: %d\n  inst_opcode: 0x%02x\n  inst_mode1: 0x%02x  inst_op1: 0x%04x\n  inst_mode2: 0x%02x  inst_op2: 0x%04x\n",
+        status, inst.opcode, inst.mode1, inst.operand1, inst.mode2, inst.operand2);
 }
 
 void cpu_push(CPU *cpu, uint16_t val) {

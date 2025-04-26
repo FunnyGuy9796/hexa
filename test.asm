@@ -1,15 +1,15 @@
-org 0x0d17
+org 0x0d1c
 
 start:
-    mov R0, #2
-    mov R1, #5
-    mov R2, R1
-    st 0xff00, R0
-    ld R6, 0xff00
     mov SP, #0xffff
-    add R1, #2
-    inc R0
+    mov R0, #10
+    mov R1, #0
     cmp R0, R1
+    jg test
+    hlt
+
+test:
+    mov R5, #3
     hlt
 
 db 0x88

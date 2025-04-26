@@ -59,7 +59,6 @@ int main(int argc, char* argv[]) {
     }
 
     char *filename = NULL;
-    size_t bytes = 0;
 
     for (int i = 0; i < argc; i++) {
         if (strcmp(argv[i], "-f") == 0 && i + 1 < argc)
@@ -68,8 +67,7 @@ int main(int argc, char* argv[]) {
             printf("Options:\n  -f | Provides the emulator with a bootable file\n  -h | Displays this list\n");
 
             return 0;
-        } else if (strcmp(argv[i], "-s") == 0)
-            bytes = strtoul(argv[++i], NULL, 0);
+        }
     }
 
     if (filename == NULL) {
@@ -92,13 +90,15 @@ int main(int argc, char* argv[]) {
     CPU cpu;
 
     init_cpu(&cpu);
-    int load_status = load_program(&cpu, data);
+    uint16_t load_status = load_program(&cpu, data);
 
-    if (load_status != 0) {
+    if (load_status == 0) {
         printf("No bootable program found...\n");
 
         return 1;
     }
+
+    printf("Loaded %d bytes from hard disk\n", load_status);
 
     exec_program(&cpu);
 

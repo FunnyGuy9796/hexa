@@ -45,6 +45,8 @@ void add_label(const char *label, uint16_t addr) {
 uint16_t find_label(const char *label) {
     for (int i = 0; i < label_count; i++) {
         if (strcmp(label_table[i].name, label) == 0) {
+            printf("\nlabel: { %s, 0x%04x }\n\n", label_table[i].name, label_table[i].addr);
+
             return label_table[i].addr;
         }
     }
@@ -70,8 +72,18 @@ uint8_t parse_opcode(const char *str) {
     else if (strcasecmp(str, "SHR") == 0) return SHR;
     else if (strcasecmp(str, "CMP") == 0) return CMP;
     else if (strcasecmp(str, "JMP") == 0) return JMP;
-    else if (strcasecmp(str, "INT") == 0) return INT;
+    else if (strcasecmp(str, "JZ") == 0) return JZ;
+    else if (strcasecmp(str, "JNZ") == 0) return JNZ;
+    else if (strcasecmp(str, "JE") == 0) return JE;
+    else if (strcasecmp(str, "JNE") == 0) return JNE;
+    else if (strcasecmp(str, "JL") == 0) return JL;
+    else if (strcasecmp(str, "JLE") == 0) return JLE;
+    else if (strcasecmp(str, "JG") == 0) return JG;
+    else if (strcasecmp(str, "JGE") == 0) return JGE;
+    else if (strcasecmp(str, "CALL") == 0) return CALL;
     else if (strcasecmp(str, "RET") == 0) return RET;
+    else if (strcasecmp(str, "IRET") == 0) return IRET;
+    else if (strcasecmp(str, "INT") == 0) return INT;
     else if (strcasecmp(str, "CLI") == 0) return CLI;
     else if (strcasecmp(str, "STI") == 0) return STI;
     else if (strcasecmp(str, "NOP") == 0) return NOP;
@@ -200,12 +212,26 @@ int second_pass(FILE *in, FILE *out) {
             inst.mode2 = MODE_VAL_IMM;
         
         if (parts >= 2) {
-            if (inst.mode1 == MODE_VAL_IMM)
-                inst.operand1 = (uint16_t)strtol(op1 + 1, NULL, 0);
-            else if (op1[0] == 'R' || strcmp(op1, "SP") == 0)
-                inst.operand1 = get_register(op1);
-            else
-                inst.operand1 = (uint16_t)strtol(op1, NULL, 0);
+            if (inst.opcode == JMP || inst.opcode == JZ || inst.opcode == JNZ || inst.opcode == JE || inst.opcode == JNE || inst.opcode == JL || inst.opcode == JLE || inst.opcode == JG || inst.opcode == JGE || inst.opcode == CALL) {
+                char *endptr;
+
+                inst.operand1 = (uint16_t)strtol(op1, &endptr, 0);
+
+                if (*endptr != '\0') {
+                    inst.operand1 = find_label(op1);
+
+                    if (inst.operand1 == (uint16_t)-1) {
+                        printf("Error on line %d: Undefined label\n  > %s\n", curr_line, mnemonic);
+
+                        return 1;
+                    }
+                }
+            } else {
+                if (inst.mode1 == MODE_VAL_IMM)
+                    inst.operand1 = (uint16_t)strtol(op1 + 1, NULL, 0);
+                else if (op1[0] == 'R' || strcmp(op1, "SP") == 0)
+                    inst.operand1 = get_register(op1);
+            }
         }
 
         if (parts == 3) {
