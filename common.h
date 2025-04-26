@@ -26,6 +26,11 @@
 
 #define START_ADDR 0x0d17
 
+#define FLAG_EQUAL (1 << 0)
+#define FLAG_LESS (1 << 1)
+#define FLAG_GREATER (1 << 2)
+#define FLAG_ZERO (1 << 3)
+
 typedef struct {
     uint8_t opcode;
     uint8_t mode1;

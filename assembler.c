@@ -153,6 +153,8 @@ int second_pass(FILE *in, FILE *out) {
 
     fputc((pc >> 8) & 0xff, out);
     fputc(pc & 0xff, out);
+    fputc(0, out);
+    fputc(0, out);
 
     while (fgets(line, sizeof(line), in)) {
         curr_line++;
@@ -199,7 +201,7 @@ int second_pass(FILE *in, FILE *out) {
         
         if (parts >= 2) {
             if (inst.mode1 == MODE_VAL_IMM)
-                inst.operand1 = (uint16_t)atoi(op1 + 1);
+                inst.operand1 = (uint16_t)strtol(op1 + 1, NULL, 0);
             else if (op1[0] == 'R' || strcmp(op1, "SP") == 0)
                 inst.operand1 = get_register(op1);
             else
@@ -208,7 +210,7 @@ int second_pass(FILE *in, FILE *out) {
 
         if (parts == 3) {
             if (inst.mode2 == MODE_VAL_IMM)
-                inst.operand2 = (uint16_t)atoi(op2 + 1);
+                inst.operand2 = (uint16_t)strtol(op2 + 1, NULL, 0);
             else if (op2[0] == 'R' || strcmp(op2, "SP") == 0)
                 inst.operand2 = get_register(op2);
             else
@@ -266,7 +268,11 @@ int main(int argc, char *argv[]) {
 
     fseek(output_file, 0, SEEK_END);
 
-    long file_size = ftell(output_file);
+    uint16_t file_size = (uint16_t)ftell(output_file);
+
+    fseek(output_file, 2, SEEK_SET);
+    fputc((file_size >> 8) & 0xff, output_file);
+    fputc(file_size & 0xff, output_file);
 
     fclose(output_file);
 

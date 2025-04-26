@@ -4,25 +4,46 @@ bool is_reg(uint16_t val) {
     return val >= R0 && val <= R7;
 }
 
+// TODO: Implement dynamic instruction sizes...
 size_t get_instruction_size(Instruction inst) {
+    return 7;
+
     switch (inst.opcode) {
         case HLT:
         case NOP:
         case RET:
+        case IRET:
         case CLI:
         case STI:
             return 1;
         case INT:
-        case CALL:
-            return 2;
         case PUSH:
         case POP:
         case INC:
         case DEC:
-            return 4;
+        case NOT:
+            return 3;
         case MOV:
         case LD:
         case ST:
+        case CALL:
+        case JMP:
+        case JZ:
+        case JNZ:
+        case JE:
+        case JNE:
+        case JL:
+        case JLE:
+        case JG:
+        case JGE:
+        case CMP:
+        case SHL:
+        case SHR:
+        case AND:
+        case OR:
+        case XOR:
+        case ADD:
+        case SUB:
             return 7;
     }
 
@@ -93,9 +114,7 @@ int exec_instruction(CPU *cpu, Instruction inst) {
         }
 
         case PUSH: {
-            uint16_t value;
-
-            value = (inst.mode1 == MODE_VAL_IND) ? (is_reg(inst.operand1) ? cpu->registers[inst.operand1] : (cpu->memory[inst.operand1] | cpu->memory[inst.operand1 + 1] << 8)) : inst.operand1;
+            uint16_t value = (inst.mode1 == MODE_VAL_IND) ? (is_reg(inst.operand1) ? cpu->registers[inst.operand1] : (cpu->memory[inst.operand1] | cpu->memory[inst.operand1 + 1] << 8)) : inst.operand1;
             
             cpu_push(cpu, value);
 
@@ -109,6 +128,97 @@ int exec_instruction(CPU *cpu, Instruction inst) {
             cpu->registers[inst.operand1] = cpu_pop(cpu);
 
             break;
+        }
+
+        case ADD:
+        case SUB: {
+            if (inst.mode1 != MODE_VAL_IND || !is_reg(inst.operand1))
+                return 1;
+            
+            uint16_t value = (inst.mode2 == MODE_VAL_IND) ? (is_reg(inst.operand2) ? cpu->registers[inst.operand2] : (cpu->memory[inst.operand2] | cpu->memory[inst.operand2 + 1] << 8)) : inst.operand2;
+
+            cpu->registers[inst.operand1] = (inst.opcode == ADD) ? cpu->registers[inst.operand1] + value : cpu->registers[inst.operand1] - value;
+
+            break;
+        }
+
+        case INC:
+        case DEC: {
+            if (inst.mode1 != MODE_VAL_IND || !is_reg(inst.operand1))
+                return 1;
+            
+            cpu->registers[inst.operand1] = (inst.opcode == INC) ? cpu->registers[inst.operand1] + 1 : cpu->registers[inst.operand1] - 1;
+
+            break;
+        }
+
+        case AND: {
+            if (inst.mode1 != MODE_VAL_IND || !is_reg(inst.operand1))
+                return 1;
+            
+            uint16_t value = (inst.mode2 == MODE_VAL_IND) ? (is_reg(inst.operand2) ? cpu->registers[inst.operand2] : (cpu->memory[inst.operand2] | cpu->memory[inst.operand2 + 1] << 8)) : inst.operand2;
+
+            cpu->registers[inst.operand1] &= value;
+
+            break;
+        }
+
+        case OR: {
+            if (inst.mode1 != MODE_VAL_IND || !is_reg(inst.operand1))
+                return 1;
+            
+            uint16_t value = (inst.mode2 == MODE_VAL_IND) ? (is_reg(inst.operand2) ? cpu->registers[inst.operand2] : (cpu->memory[inst.operand2] | cpu->memory[inst.operand2 + 1] << 8)) : inst.operand2;
+
+            cpu->registers[inst.operand1] |= value;
+
+            break;
+        }
+
+        case XOR: {
+            if (inst.mode1 != MODE_VAL_IND || !is_reg(inst.operand1))
+                return 1;
+            
+            uint16_t value = (inst.mode2 == MODE_VAL_IND) ? (is_reg(inst.operand2) ? cpu->registers[inst.operand2] : (cpu->memory[inst.operand2] | cpu->memory[inst.operand2 + 1] << 8)) : inst.operand2;
+
+            cpu->registers[inst.operand1] ^= value;
+
+            break;
+        }
+
+        case NOT: {
+            if (inst.mode1 != MODE_VAL_IND || !is_reg(inst.operand1))
+                return 1;
+            
+            cpu->registers[inst.operand1] = ~cpu->registers[inst.operand1];
+
+            break;
+        }
+
+        case SHL:
+        case SHR: {
+            if (inst.mode1 != MODE_VAL_IND || !is_reg(inst.operand1))
+                return 1;
+            
+            uint16_t value = (inst.mode2 == MODE_VAL_IND) ? (is_reg(inst.operand2) ? cpu->registers[inst.operand2] : (cpu->memory[inst.operand2] | cpu->memory[inst.operand2 + 1] << 8)) : inst.operand2;
+
+            cpu->registers[inst.operand1] = (inst.opcode == SHL) ? cpu->registers[inst.operand1] << value : cpu->registers[inst.operand1] >> value;
+
+            break;
+        }
+
+        case CMP: {
+            if (inst.mode1 != MODE_VAL_IND || !is_reg(inst.operand1))
+                return 1;
+            
+            uint16_t val1 = cpu->registers[inst.operand1];
+            uint16_t val2 = (inst.mode2 == MODE_VAL_IND) ? (is_reg(inst.operand2) ? cpu->registers[inst.operand2] : (cpu->memory[inst.operand2] | cpu->memory[inst.operand2 + 1] << 8)) : inst.operand2;
+            
+            if (val1 == val2)
+                cpu->flags |= FLAG_EQUAL | FLAG_ZERO;
+            else if (val1 < val2)
+                cpu->flags |= FLAG_LESS;
+            else if (val1 > val2)
+                cpu->flags |= FLAG_GREATER;
         }
 
         case HLT: {

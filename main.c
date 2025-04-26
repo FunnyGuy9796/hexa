@@ -92,7 +92,7 @@ int main(int argc, char* argv[]) {
     CPU cpu;
 
     init_cpu(&cpu);
-    int load_status = load_program(&cpu, data, bytes);
+    int load_status = load_program(&cpu, data);
 
     if (load_status != 0) {
         printf("No bootable program found...\n");

@@ -14,14 +14,15 @@ void init_cpu(CPU *cpu) {
         cpu->memory[i] = 0;
 }
 
-int load_program(CPU *cpu, uint8_t *program, size_t size) {
+int load_program(CPU *cpu, uint8_t *program) {
     uint16_t start_addr = (program[0] << 8) | program[1];
+    uint16_t size = (program[2] << 8) | program[3];
 
     if (program[size - 1] == 0xcc && program[size - 2] == 0x88) {
         printf("\n");
         
-        for (size_t i = 0; i < size - 2; i++) {
-            cpu->memory[start_addr + i] = program[i + 2];
+        for (size_t i = 0; i < size - 4; i++) {
+            cpu->memory[start_addr + i] = program[i + 4];
 
             printf("%02x ", cpu->memory[start_addr + i]);
 
