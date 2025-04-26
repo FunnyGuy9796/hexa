@@ -50,6 +50,8 @@ int exec_program(CPU *cpu) {
 
             return 1;
         }
+
+        usleep(CYCLE_TIME_US);
     }
 
     return 0;

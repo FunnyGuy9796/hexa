@@ -324,6 +324,10 @@ int exec_instruction(CPU *cpu, Instruction inst) {
             break;
         }
 
+        case NOP: {
+            break;
+        }
+
         case HLT: {
             cpu->halted = true;
 
