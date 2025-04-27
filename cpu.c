@@ -1,5 +1,6 @@
 #include "cpu.h"
 #include "instruction_set.h"
+#include "bitmap_font.h"
 
 void init_cpu(CPU *cpu) {
     for (size_t i = 0; i < REG_NUM; i++)
@@ -12,6 +13,11 @@ void init_cpu(CPU *cpu) {
     
     for (size_t i = 0; i < MEM_SIZE; i++)
         cpu->memory[i] = 0;
+    
+    for (size_t i = 0; i < 128; i++) {
+        for (size_t j = 0; j < 8; j++)
+            cpu->memory[BF_ADDR + i * 8 + j] = font8x8_basic[i][j];
+    }
 }
 
 uint16_t load_program(CPU *cpu, uint8_t *program) {
@@ -31,27 +37,22 @@ uint16_t load_program(CPU *cpu, uint8_t *program) {
         }
 
         printf("\n\n");
+
+        cpu->pc = start_addr;
         
         return size - 4;
     } else
         return 0;
 }
 
-int exec_program(CPU *cpu) {
-    cpu->pc = START_ADDR;
-    cpu->ip = cpu->memory[cpu->pc];
-    
-    while (!cpu->halted) {
-        Instruction inst = parse_instruction(cpu);
-        int status = exec_instruction(cpu, inst);
+int step_program(CPU *cpu) {
+    Instruction inst = parse_instruction(cpu);
+    int status = exec_instruction(cpu, inst);
 
-        if (status != 0) {
-            cpu_exception(cpu, status, inst);
+    if (status != 0) {
+        cpu_exception(cpu, status, inst);
 
-            return 1;
-        }
-
-        usleep(CYCLE_TIME_US);
+        return 1;
     }
 
     return 0;

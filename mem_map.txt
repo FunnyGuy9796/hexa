@@ -5,7 +5,7 @@ general purpose registers       0x0000      0x0007      8 bytes
 special registers               0x0008      0x000b      4 bytes
 padding (reserved)              0x000c      0x000f      4 bytes
 interrupt vector table          0x0010      0x010f      256 bytes
-font bitmap                     0x0110      0x0510      1 kb
+font bitmap                     0x0110      0x050f      1 kb
 text mode                       0x0510      0x0d0f      2 kb
 display                         0x0d10      0x0d11      2 byte (display status, display cmd)
 keyboard                        0x0d12      0x0d14      3 bytes (key value, key status, key ctrl status)

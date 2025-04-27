@@ -98,19 +98,22 @@ int exec_instruction(CPU *cpu, Instruction inst) {
         }
 
         case LD: {
-            if (inst.mode1 != MODE_VAL_IND || !is_reg(inst.operand1) || inst.mode2 != MODE_VAL_IND || is_reg(inst.operand2))
+            if (inst.mode1 == MODE_VAL_IND || !is_reg(inst.operand1) || inst.mode2 != MODE_VAL_IND || is_reg(inst.operand2))
                 return 1;
             
-            cpu->registers[inst.operand1] = cpu->memory[inst.operand2];
+            cpu->registers[inst.operand1] = cpu->memory[inst.operand2] | (cpu->memory[inst.operand2 + 1] << 8);
 
             break;
         }
 
         case ST: {
-            if (inst.mode1 != MODE_VAL_IND || is_reg(inst.operand1))
+            if (inst.mode1 == MODE_VAL_IND || is_reg(inst.operand1))
                 return 1;
             
-            cpu->memory[inst.operand1] = (inst.mode2 == MODE_VAL_IMM) ? inst.operand2 : cpu->registers[inst.operand2];
+            uint16_t value = (inst.mode2 == MODE_VAL_IMM) ? inst.operand2 : cpu->registers[inst.operand2];
+
+            cpu->memory[inst.operand1] = value & 0xff;
+            cpu->memory[inst.operand1 + 1] = (value >> 8) & 0xff;
             
             break;
         }
@@ -320,6 +323,26 @@ int exec_instruction(CPU *cpu, Instruction inst) {
                 cpu->pc = jmp_addr;
                 pc_modified = true;
             }
+
+            break;
+        }
+
+        case CALL: {
+            uint16_t return_addr = cpu->pc + inst_size;
+            uint16_t call_addr = inst.operand1;
+
+            cpu_push(cpu, return_addr);
+            cpu->pc = call_addr;
+            pc_modified = true;
+
+            break;
+        }
+
+        case RET: {
+            uint16_t return_addr = cpu_pop(cpu);
+
+            cpu->pc = return_addr;
+            pc_modified = true;
 
             break;
         }

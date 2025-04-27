@@ -4,6 +4,9 @@
 #include <stdint.h>
 #include <stddef.h>
 #include <stdbool.h>
+#include <stdio.h>
+#include <string.h>
+#include <unistd.h>
 
 #define REG_NUM 8
 #define MEM_SIZE 65536

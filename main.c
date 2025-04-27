@@ -1,8 +1,10 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <signal.h>
 #include "cpu.h"
 #include "instruction_set.h"
+#include "display.h"
 
 uint8_t *read_file(const char *filename, size_t *size) {
     FILE *file = fopen(filename, "rb");
@@ -90,6 +92,7 @@ int main(int argc, char* argv[]) {
     CPU cpu;
 
     init_cpu(&cpu);
+
     uint16_t load_status = load_program(&cpu, data);
 
     if (load_status == 0) {
@@ -100,10 +103,20 @@ int main(int argc, char* argv[]) {
 
     printf("Loaded %d bytes from hard disk\n", load_status);
 
-    exec_program(&cpu);
+    signal(SIGINT, display_cleanup);
 
-    printf("\nCPU:\n  R0: 0x%04x  R1: 0x%04x  R2: 0x%04x  R3: 0x%04x\n  R4: 0x%04x  R5: 0x%04x  R6: 0x%04x  R7: 0x%04x\n  PC: 0x%04x  IP: 0x%02x    SP: 0x%04x  FLAGS: 0x%02x\n",
-        cpu.registers[0], cpu.registers[1], cpu.registers[2], cpu.registers[3], cpu.registers[4], cpu.registers[5], cpu.registers[6], cpu.registers[7], cpu.pc, cpu.ip, cpu.sp, cpu.flags);
+    printf("\033[?25l");
+    printf("\033[2J");
+    fflush(stdout);
+
+    while (!cpu.halted) {
+        step_program(&cpu);
+        display_draw(&cpu);
+        usleep(CYCLE_TIME_US);
+    }
+
+    printf("\nCPU:\n  Clock Speed: %d MHz\n  R0: 0x%04x  R1: 0x%04x  R2: 0x%04x  R3: 0x%04x\n  R4: 0x%04x  R5: 0x%04x  R6: 0x%04x  R7: 0x%04x\n  PC: 0x%04x  IP: 0x%02x    SP: 0x%04x  FLAGS: 0x%02x\n",
+        CYCLES_PER_SECOND / 1000000, cpu.registers[0], cpu.registers[1], cpu.registers[2], cpu.registers[3], cpu.registers[4], cpu.registers[5], cpu.registers[6], cpu.registers[7], cpu.pc, cpu.ip, cpu.sp, cpu.flags);
 
     return 0;
 }
