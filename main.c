@@ -4,7 +4,9 @@
 #include <signal.h>
 #include "cpu.h"
 #include "instruction_set.h"
-#include "display.h"
+#include "serial.h"
+
+uint16_t sleep_time_us;
 
 uint8_t *read_file(const char *filename, size_t *size) {
     FILE *file = fopen(filename, "rb");
@@ -103,16 +105,18 @@ int main(int argc, char* argv[]) {
 
     printf("Loaded %d bytes from hard disk\n", load_status);
 
-    signal(SIGINT, display_cleanup);
-
-    printf("\033[?25l");
-    printf("\033[2J");
-    fflush(stdout);
-
     while (!cpu.halted) {
+        sleep_time_us = (1000000ULL * cpu.cycles_per_sleep) / CYCLES_PER_SECOND;
         step_program(&cpu);
-        display_draw(&cpu);
-        usleep(CYCLE_TIME_US);
+        cpu.cycle_count++;
+
+        poll_serial(&cpu);
+
+        if (cpu.cycle_count >= cpu.cycles_per_sleep) {
+            cpu.cycle_count = 0;
+            cpu_interrupt(&cpu, 0x01, parse_instruction(&cpu));
+            usleep(sleep_time_us);
+        }
     }
 
     printf("\nCPU:\n  Clock Speed: %d MHz\n  R0: 0x%04x  R1: 0x%04x  R2: 0x%04x  R3: 0x%04x\n  R4: 0x%04x  R5: 0x%04x  R6: 0x%04x  R7: 0x%04x\n  PC: 0x%04x  IP: 0x%02x    SP: 0x%04x  FLAGS: 0x%02x\n",

@@ -14,25 +14,36 @@
 #define MODE_VAL_IMM 0x00
 #define MODE_VAL_IND 0x01
 
-#define R0 0x00
-#define R1 0x01
-#define R2 0x02
-#define R3 0x03
-#define R4 0x04
-#define R5 0x05
-#define R6 0x06
-#define R7 0x07
-#define PC 0x08
-#define IP 0x09
-#define SP 0x0a
-#define FLAGS 0x0b
-
-#define START_ADDR 0x0d1c
+#define START_ADDR 0x051e
+#define IVT_ADDR 0x0010
 
 #define FLAG_EQUAL (1 << 0)
 #define FLAG_LESS (1 << 1)
 #define FLAG_GREATER (1 << 2)
 #define FLAG_ZERO (1 << 3)
+
+#define SERIAL_DATA 0x051a
+#define SERIAL_STATUS 0x051c
+#define SERIAL_CTRL 0x051d
+
+#define SERIAL_STATUS_TX_READY (1 << 0)
+#define SERIAL_STATUS_RX_READY (1 << 1)
+#define SERIAL_STATUS_OVERRUN (1 << 2)
+
+enum REGS {
+    R0 = 0x00,
+    R1 = 0x01,
+    R2 = 0x02,
+    R3 = 0x03,
+    R4 = 0x04,
+    R5 = 0x05,
+    R6 = 0x06,
+    R7 = 0x07,
+    PC = 0x08,
+    IP = 0x09,
+    SP = 0x0a,
+    FLAGS = 0x0b
+};
 
 typedef struct {
     uint8_t opcode;
@@ -48,7 +59,11 @@ typedef struct {
     uint8_t ip;
     uint16_t sp;
     uint16_t flags;
+    uint16_t cycle_count;
+    uint16_t cycles_per_sleep;
     bool halted;
+    bool interrupts_enabled;
+    bool tx_pending;
     uint8_t memory[MEM_SIZE];
 } CPU;
 

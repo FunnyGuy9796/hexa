@@ -97,6 +97,8 @@ uint16_t get_register(const char *str) {
         return str[1] - '0';
     else if (strcmp(str, "SP") == 0)
         return SP;
+    else if (strcmp(str, "PC") == 0)
+        return PC;
     
     return 0;
 }
@@ -229,7 +231,7 @@ int second_pass(FILE *in, FILE *out) {
             } else {
                 if (inst.mode1 == MODE_VAL_IMM)
                     inst.operand1 = (uint16_t)strtol(op1 + 1, NULL, 0);
-                else if (op1[0] == 'R' || strcmp(op1, "SP") == 0)
+                else if (op1[0] == 'R' || strcmp(op1, "SP") == 0 || strcmp(op2, "PC") == 0)
                     inst.operand1 = get_register(op1);
             }
         }
@@ -237,7 +239,7 @@ int second_pass(FILE *in, FILE *out) {
         if (parts == 3) {
             if (inst.mode2 == MODE_VAL_IMM)
                 inst.operand2 = (uint16_t)strtol(op2 + 1, NULL, 0);
-            else if (op2[0] == 'R' || strcmp(op2, "SP") == 0)
+            else if (op2[0] == 'R' || strcmp(op2, "SP") == 0 || strcmp(op2, "PC") == 0)
                 inst.operand2 = get_register(op2);
             else
                 inst.operand2 = (uint16_t)strtol(op2, NULL, 0);

@@ -6,50 +6,8 @@ bool is_reg(uint16_t val) {
     return val >= R0 && val <= R7;
 }
 
-// TODO: Implement dynamic instruction sizes...
 size_t get_instruction_size(Instruction inst) {
     return 7;
-
-    switch (inst.opcode) {
-        case HLT:
-        case NOP:
-        case RET:
-        case IRET:
-        case CLI:
-        case STI:
-            return 1;
-        case INT:
-        case PUSH:
-        case POP:
-        case INC:
-        case DEC:
-        case NOT:
-            return 3;
-        case MOV:
-        case LD:
-        case ST:
-        case CALL:
-        case JMP:
-        case JZ:
-        case JNZ:
-        case JE:
-        case JNE:
-        case JL:
-        case JLE:
-        case JG:
-        case JGE:
-        case CMP:
-        case SHL:
-        case SHR:
-        case AND:
-        case OR:
-        case XOR:
-        case ADD:
-        case SUB:
-            return 7;
-    }
-
-    return 0;
 }
 
 Instruction parse_instruction(CPU *cpu) {
@@ -72,24 +30,29 @@ int exec_instruction(CPU *cpu, Instruction inst) {
     
     switch (inst.opcode) {
         case MOV: {
-            bool isSP = false;
+            bool isSP, isPC = false;
 
             if (inst.mode1 != MODE_VAL_IND || !is_reg(inst.operand1)) {
-                if (inst.operand1 != SP)
-                    return 1;
-                else {
+                if (inst.operand1 == SP)
                     isSP = true;
-                }
+                else if (inst.operand1 == PC)
+                    isPC = true;
+                else
+                    return 1;
             }
             
             if (inst.mode2 == MODE_VAL_IMM) {
                 if (isSP)
                     cpu->sp = inst.operand2;
+                else if (isPC)
+                    cpu->pc = inst.operand2;
                 else
                     cpu->registers[inst.operand1] = inst.operand2;
             } else {
                 if (isSP)
                     cpu->sp = cpu->registers[inst.operand2];
+                else if (isPC)
+                    cpu->pc = cpu->registers[inst.operand2];
                 else
                     cpu->registers[inst.operand1] = cpu->registers[inst.operand2];
             }
@@ -98,22 +61,22 @@ int exec_instruction(CPU *cpu, Instruction inst) {
         }
 
         case LD: {
-            if (inst.mode1 == MODE_VAL_IND || !is_reg(inst.operand1) || inst.mode2 != MODE_VAL_IND || is_reg(inst.operand2))
+            uint16_t value = (inst.mode2 == MODE_VAL_IMM) ? inst.operand2 : cpu->registers[inst.operand2];
+
+            if (inst.mode1 != MODE_VAL_IND || !is_reg(inst.operand1))
                 return 1;
             
-            cpu->registers[inst.operand1] = cpu->memory[inst.operand2] | (cpu->memory[inst.operand2 + 1] << 8);
+            cpu->registers[inst.operand1] = cpu->memory[value] | (cpu->memory[value + 1] << 8);
 
             break;
         }
 
         case ST: {
-            if (inst.mode1 == MODE_VAL_IND || is_reg(inst.operand1))
-                return 1;
-            
+            uint16_t dest = (inst.mode1 == MODE_VAL_IMM) ? inst.operand1 : cpu->registers[inst.operand1];
             uint16_t value = (inst.mode2 == MODE_VAL_IMM) ? inst.operand2 : cpu->registers[inst.operand2];
 
-            cpu->memory[inst.operand1] = value & 0xff;
-            cpu->memory[inst.operand1 + 1] = (value >> 8) & 0xff;
+            cpu->memory[dest] = value & 0xff;
+            cpu->memory[dest + 1] = (value >> 8) & 0xff;
             
             break;
         }
@@ -339,10 +302,30 @@ int exec_instruction(CPU *cpu, Instruction inst) {
         }
 
         case RET: {
-            uint16_t return_addr = cpu_pop(cpu);
-
-            cpu->pc = return_addr;
+            cpu->pc = cpu_pop(cpu);
             pc_modified = true;
+
+            break;
+        }
+
+        case IRET: {
+            uint16_t int_num = cpu_pop(cpu);
+
+            cpu->flags = cpu_pop(cpu);
+            cpu->pc = cpu_pop(cpu);
+            pc_modified = true;
+
+            break;
+        }
+
+        case CLI: {
+            cpu->interrupts_enabled = false;
+
+            break;
+        }
+
+        case STI: {
+            cpu->interrupts_enabled = true;
 
             break;
         }
