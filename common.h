@@ -29,6 +29,7 @@
 #define SERIAL_STATUS_TX_READY (1 << 0)
 #define SERIAL_STATUS_RX_READY (1 << 1)
 #define SERIAL_STATUS_OVERRUN (1 << 2)
+#define SERIAL_STATUS_NEW_DATA (1 << 3)
 
 enum REGS {
     R0 = 0x00,

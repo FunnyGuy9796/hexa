@@ -77,6 +77,9 @@ int exec_instruction(CPU *cpu, Instruction inst) {
 
             cpu->memory[dest] = value & 0xff;
             cpu->memory[dest + 1] = (value >> 8) & 0xff;
+
+            if (dest == SERIAL_DATA)
+                cpu->memory[SERIAL_STATUS] |= SERIAL_STATUS_NEW_DATA;
             
             break;
         }
