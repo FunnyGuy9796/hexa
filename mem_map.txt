@@ -1,4 +1,4 @@
-total size: 65.5 kb (65536 bytes)
+total size: 65.5 kb (65535 bytes)
 
 type:                           start:      end:        size:
 general purpose registers       0x0000      0x0007      8 bytes
@@ -9,4 +9,4 @@ display                         0x0110      0x0111      2 bytes (display status,
 keyboard                        0x0510      0x0513      4 bytes (key value, key status, key ctrl status, padding)
 timer                           0x0514      0x0519      6 byte (timer ctrl, timer status, counter L, counter H, compare L, compare H)
 serial port                     0x051a      0x051d      4 bytes (serial data[1]. serial data[2], serial status, serial ctrl)
-usable memory                   0x051e      0xffff      64.2 kb (64224 bytes)
+usable memory                   0x051e      0xffff      65.3 kb (65247 bytes)
