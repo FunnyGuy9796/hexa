@@ -1,8 +1,8 @@
-org 0x051e
+org 0x011e
 
 start:
     mov SP, #0xffff
-    mov R0, #0x051a
+    mov R0, #0x011a
 
     st R0, #0x0a
     st R0, #0x48

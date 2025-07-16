@@ -114,6 +114,7 @@ int main(int argc, char* argv[]) {
 
         if (cpu.cycle_count >= cpu.cycles_per_sleep) {
             cpu.cycle_count = 0;
+            
             cpu_interrupt(&cpu, 0x01, parse_instruction(&cpu));
             usleep(sleep_time_us);
         }

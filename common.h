@@ -14,7 +14,7 @@
 #define MODE_VAL_IMM 0x00
 #define MODE_VAL_IND 0x01
 
-#define START_ADDR 0x051e
+#define START_ADDR 0x011e
 #define IVT_ADDR 0x0010
 
 #define FLAG_EQUAL (1 << 0)
@@ -22,9 +22,9 @@
 #define FLAG_GREATER (1 << 2)
 #define FLAG_ZERO (1 << 3)
 
-#define SERIAL_DATA 0x051a
-#define SERIAL_STATUS 0x051c
-#define SERIAL_CTRL 0x051d
+#define SERIAL_DATA 0x011a
+#define SERIAL_STATUS 0x011c
+#define SERIAL_CTRL 0x011d
 
 #define SERIAL_STATUS_TX_READY (1 << 0)
 #define SERIAL_STATUS_RX_READY (1 << 1)
