@@ -11,14 +11,14 @@
 
 typedef struct {
     char name[32];
-    uint16_t addr;
+    uint32_t addr;
 } Label;
 
 Label label_table[MAX_LABELS];
 size_t label_count = 0;
 
-uint16_t origin_addr = START_ADDR;
-uint16_t pc;
+uint32_t origin_addr = START_ADDR;
+uint32_t pc;
 
 void trim(char *str) {
     char *end;
@@ -32,26 +32,26 @@ void trim(char *str) {
     *(end + 1) = 0;
 }
 
-void add_label(const char *label, uint16_t addr) {
+void add_label(const char *label, uint32_t addr) {
     if (label_count <= MAX_LABELS) {
-        printf("Found label: { %s, 0x%04x }\n", label, addr);
+        printf("Found label: { %s, 0x%05x }\n", label, addr);
 
         strncpy(label_table[label_count].name, label, 32);
-        label_table[label_count].addr = addr;
+        label_table[label_count].addr = addr & ADDR_MASK;
         label_count++;
     }
 }
 
-uint16_t find_label(const char *label) {
+uint32_t find_label(const char *label) {
     for (int i = 0; i < label_count; i++) {
         if (strcmp(label_table[i].name, label) == 0) {
-            printf("\nlabel: { %s, 0x%04x }\n\n", label_table[i].name, label_table[i].addr);
+            printf("\nlabel: { %s, 0x%05x }\n\n", label_table[i].name, label_table[i].addr);
 
             return label_table[i].addr;
         }
     }
 
-    return -1;
+    return 0;
 }
 
 uint8_t parse_opcode(const char *str) {
@@ -99,11 +99,17 @@ uint16_t get_register(const char *str) {
         return SP;
     else if (strcmp(str, "PC") == 0)
         return PC;
+    else if (strcmp(str, "CS") == 0)
+        return CS;
+    else if (strcmp(str, "SS") == 0)
+        return SS;
+    else if (strcmp(str, "DS") == 0)
+        return DS;
     
     return 0;
 }
 
-uint16_t first_pass(FILE *file) {
+uint32_t first_pass(FILE *file) {
     char line[MAX_LINE_LEN];
     pc = START_ADDR;
 
@@ -116,7 +122,7 @@ uint16_t first_pass(FILE *file) {
             unsigned int org;
 
             if (sscanf(line + 3, "%x", &org) == 1) {
-                origin_addr = (uint16_t)org;
+                origin_addr = (uint32_t)org & ADDR_MASK;
                 pc = origin_addr;
             }
 
@@ -152,7 +158,7 @@ uint16_t first_pass(FILE *file) {
 
         Instruction dummy = {.opcode = parse_opcode(mnemonic)};
 
-        pc += get_instruction_size(dummy);
+        pc += INST_SIZE;
     }
 
     rewind(file);
@@ -165,8 +171,11 @@ int second_pass(FILE *in, FILE *out) {
     int curr_line = 0;
     pc = origin_addr;
 
+    fputc((pc >> 16) & 0x0f, out);
     fputc((pc >> 8) & 0xff, out);
     fputc(pc & 0xff, out);
+
+    fputc(0, out);
     fputc(0, out);
     fputc(0, out);
 
@@ -215,15 +224,19 @@ int second_pass(FILE *in, FILE *out) {
         
         if (parts >= 2) {
             if (inst.opcode == JMP || inst.opcode == JZ || inst.opcode == JNZ || inst.opcode == JE || inst.opcode == JNE || inst.opcode == JL || inst.opcode == JLE || inst.opcode == JG || inst.opcode == JGE || inst.opcode == CALL) {
+                char *value = op1;
+                
+                if (value[0] == '#') value++;
+
                 char *endptr;
 
-                inst.operand1 = (uint16_t)strtol(op1, &endptr, 0);
+                inst.operand1 = (uint32_t)strtol(value, &endptr, 0);
 
                 if (*endptr != '\0') {
                     inst.operand1 = find_label(op1);
 
-                    if (inst.operand1 == (uint16_t)-1) {
-                        printf("Error on line %d: Undefined label\n  > %s\n", curr_line, mnemonic);
+                    if (inst.operand1 == (uint32_t)0) {
+                        printf("Error on line %d: Undefined label\n  > %s\n", curr_line, line);
 
                         return 1;
                     }
@@ -231,7 +244,7 @@ int second_pass(FILE *in, FILE *out) {
             } else {
                 if (inst.mode1 == MODE_VAL_IMM)
                     inst.operand1 = (uint16_t)strtol(op1 + 1, NULL, 0);
-                else if (op1[0] == 'R' || strcmp(op1, "SP") == 0 || strcmp(op2, "PC") == 0)
+                else if (op1[0] == 'R' || strcmp(op1, "SP") == 0 || strcmp(op1, "PC") == 0 || strcmp(op1, "CS") == 0 || strcmp(op1, "SS") == 0 || strcmp(op1, "DS") == 0)
                     inst.operand1 = get_register(op1);
             }
         }
@@ -239,13 +252,21 @@ int second_pass(FILE *in, FILE *out) {
         if (parts == 3) {
             if (inst.mode2 == MODE_VAL_IMM)
                 inst.operand2 = (uint16_t)strtol(op2 + 1, NULL, 0);
-            else if (op2[0] == 'R' || strcmp(op2, "SP") == 0 || strcmp(op2, "PC") == 0)
+            else if (op2[0] == 'R' || strcmp(op2, "SP") == 0 || strcmp(op2, "PC") == 0 || strcmp(op2, "CS") == 0 || strcmp(op2, "SS") == 0 || strcmp(op2, "DS") == 0)
                 inst.operand2 = get_register(op2);
             else
                 inst.operand2 = (uint16_t)strtol(op2, NULL, 0);
         }
 
-        printf("line %d: %s\n  addr: 0x%04x\n  bytes: 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x\n", curr_line, line, pc, inst.opcode, inst.mode1, (inst.operand1 >> 8) & 0xff, inst.operand1 & 0xff, inst.mode2, (inst.operand2 >> 8) & 0xff, inst.operand2 & 0xff);
+        printf("line %d: %s\n  addr: 0x%05x\n  bytes: 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x\n",
+            curr_line, line, pc,
+            inst.opcode, inst.mode1,
+            (inst.operand1 >> 8) & 0xff,
+            inst.operand1 & 0xff,
+            inst.mode2,
+            (inst.operand2 >> 8) & 0xff,
+            inst.operand2 & 0xff
+        );
 
         fputc(inst.opcode, out);
         fputc(inst.mode1, out);
@@ -255,7 +276,7 @@ int second_pass(FILE *in, FILE *out) {
         fputc((inst.operand2 >> 8) & 0xff, out);
         fputc(inst.operand2 & 0xff, out);
 
-        pc += get_instruction_size(inst);
+        pc += INST_SIZE;
     }
 
     return 0;
@@ -296,9 +317,10 @@ int main(int argc, char *argv[]) {
 
     fseek(output_file, 0, SEEK_END);
 
-    uint16_t file_size = (uint16_t)ftell(output_file);
+    uint32_t file_size = (uint32_t)ftell(output_file);
 
-    fseek(output_file, 2, SEEK_SET);
+    fseek(output_file, 3, SEEK_SET);
+    fputc((file_size >> 16) & 0x0f, output_file);
     fputc((file_size >> 8) & 0xff, output_file);
     fputc(file_size & 0xff, output_file);
 

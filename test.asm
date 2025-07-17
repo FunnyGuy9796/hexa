@@ -1,6 +1,7 @@
-org 0x011e
+org 0x0011e
 
 start:
+    mov SS, #0x0f
     mov SP, #0xffff
     mov R0, #0x011a
 

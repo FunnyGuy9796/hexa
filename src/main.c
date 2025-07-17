@@ -56,7 +56,7 @@ uint8_t *read_file(const char *filename, size_t *size) {
 }
 
 int main(int argc, char* argv[]) {
-    if (argc <= 0) {
+    if (argc <= 1) {
         printf("Options:\n  -f | Provides the emulator with a bootable file\n  -h | Displays this list\n");
 
         return 0;
@@ -114,14 +114,14 @@ int main(int argc, char* argv[]) {
 
         if (cpu.cycle_count >= cpu.cycles_per_sleep) {
             cpu.cycle_count = 0;
-            
+
             cpu_interrupt(&cpu, 0x01, parse_instruction(&cpu));
             usleep(sleep_time_us);
         }
     }
 
-    printf("\nCPU:\n  Clock Speed: %d MHz\n  R0: 0x%04x  R1: 0x%04x  R2: 0x%04x  R3: 0x%04x\n  R4: 0x%04x  R5: 0x%04x  R6: 0x%04x  R7: 0x%04x\n  PC: 0x%04x  IP: 0x%02x    SP: 0x%04x  FLAGS: 0x%02x\n",
-        CYCLES_PER_SECOND / 1000000, cpu.registers[0], cpu.registers[1], cpu.registers[2], cpu.registers[3], cpu.registers[4], cpu.registers[5], cpu.registers[6], cpu.registers[7], cpu.pc, cpu.ip, cpu.sp, cpu.flags);
-
+    printf("\nCPU:\n  Clock Speed: %d MHz\n  R0: 0x%04x  R1: 0x%04x  R2: 0x%04x  R3: 0x%04x\n  R4: 0x%04x  R5: 0x%04x  R6: 0x%04x  R7: 0x%04x\n  PC: 0x%04x  IP: 0x%02x    SP: 0x%04x  CS: 0x%04x\n  DS: 0x%04x  SS: 0x%04x  FLAGS: 0x%04x\n",
+        CYCLES_PER_SECOND / 1000000, cpu.registers[0], cpu.registers[1], cpu.registers[2], cpu.registers[3], cpu.registers[4], cpu.registers[5], cpu.registers[6], cpu.registers[7], cpu.pc, cpu.ip, cpu.sp, cpu.cs, cpu.ds, cpu.ss, cpu.flags);
+    
     return 0;
 }

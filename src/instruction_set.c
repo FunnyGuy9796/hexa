@@ -6,10 +6,6 @@ bool is_reg(uint16_t val) {
     return val >= R0 && val <= R7;
 }
 
-size_t get_instruction_size(Instruction inst) {
-    return 7;
-}
-
 Instruction parse_instruction(CPU *cpu) {
     Instruction inst;
 
@@ -23,20 +19,24 @@ Instruction parse_instruction(CPU *cpu) {
 }
 
 int exec_instruction(CPU *cpu, Instruction inst) {
-    size_t inst_size = get_instruction_size(inst);
-
     pc_modified = false;
     cpu->ip = inst.opcode;
     
     switch (inst.opcode) {
         case MOV: {
-            bool isSP, isPC = false;
+            bool isSP = false, isPC = false, isCS = false, isSS = false, isDS = false;
 
             if (inst.mode1 != MODE_VAL_IND || !is_reg(inst.operand1)) {
                 if (inst.operand1 == SP)
                     isSP = true;
                 else if (inst.operand1 == PC)
                     isPC = true;
+                else if (inst.operand1 == CS)
+                    isCS = true;
+                else if (inst.operand1 == SS)
+                    isSS = true;
+                else if (inst.operand1 == DS)
+                    isDS = true;
                 else
                     return 1;
             }
@@ -46,6 +46,12 @@ int exec_instruction(CPU *cpu, Instruction inst) {
                     cpu->sp = inst.operand2;
                 else if (isPC)
                     cpu->pc = inst.operand2;
+                else if (isCS)
+                    cpu->cs = inst.operand2;
+                else if (isSS)
+                    cpu->ss = inst.operand2;
+                else if (isDS)
+                    cpu->ds = inst.operand2;
                 else
                     cpu->registers[inst.operand1] = inst.operand2;
             } else {
@@ -53,6 +59,12 @@ int exec_instruction(CPU *cpu, Instruction inst) {
                     cpu->sp = cpu->registers[inst.operand2];
                 else if (isPC)
                     cpu->pc = cpu->registers[inst.operand2];
+                else if (isCS)
+                    cpu->cs = cpu->registers[inst.operand2];
+                else if (isSS)
+                    cpu->ss = cpu->registers[inst.operand2];
+                else if (isDS)
+                    cpu->ds = cpu->registers[inst.operand2];
                 else
                     cpu->registers[inst.operand1] = cpu->registers[inst.operand2];
             }
@@ -61,24 +73,27 @@ int exec_instruction(CPU *cpu, Instruction inst) {
         }
 
         case LD: {
-            uint16_t value = (inst.mode2 == MODE_VAL_IMM) ? inst.operand2 : cpu->registers[inst.operand2];
+            uint16_t offset = (inst.mode2 == MODE_VAL_IMM) ? inst.operand2 : cpu->registers[inst.operand2];
 
             if (inst.mode1 != MODE_VAL_IND || !is_reg(inst.operand1))
                 return 1;
             
-            cpu->registers[inst.operand1] = cpu->memory[value] | (cpu->memory[value + 1] << 8);
+            uint32_t phys_addr = seg_offset(cpu->ds, offset);
+            
+            cpu->registers[inst.operand1] = cpu->memory[phys_addr] | (cpu->memory[phys_addr + 1] << 8);
 
             break;
         }
 
         case ST: {
-            uint16_t dest = (inst.mode1 == MODE_VAL_IMM) ? inst.operand1 : cpu->registers[inst.operand1];
+            uint16_t offset = (inst.mode1 == MODE_VAL_IMM) ? inst.operand1 : cpu->registers[inst.operand1];
             uint16_t value = (inst.mode2 == MODE_VAL_IMM) ? inst.operand2 : cpu->registers[inst.operand2];
+            uint32_t phys_addr = seg_offset(cpu->ds, offset);
 
-            cpu->memory[dest] = value & 0xff;
-            cpu->memory[dest + 1] = (value >> 8) & 0xff;
+            cpu->memory[phys_addr] = value & 0xff;
+            cpu->memory[phys_addr + 1] = (value >> 8) & 0xff;
 
-            if (dest == SERIAL_DATA)
+            if (phys_addr == SERIAL_DATA)
                 cpu->memory[SERIAL_STATUS] |= SERIAL_STATUS_NEW_DATA;
             
             break;
@@ -197,9 +212,9 @@ int exec_instruction(CPU *cpu, Instruction inst) {
         }
 
         case JMP: {
-            uint16_t jmp_addr = inst.operand1;
+            uint16_t offset = inst.operand1;
 
-            cpu->pc = jmp_addr;
+            cpu->pc = seg_offset(cpu->cs, offset);
             pc_modified = true;
 
             break;
@@ -207,9 +222,9 @@ int exec_instruction(CPU *cpu, Instruction inst) {
 
         case JZ: {
             if (cpu->flags & FLAG_ZERO) {
-                uint16_t jmp_addr = inst.operand1;
+                uint16_t offset = inst.operand1;
 
-                cpu->pc = jmp_addr;
+                cpu->pc = seg_offset(cpu->cs, offset);
                 pc_modified = true;
             }
 
@@ -218,9 +233,9 @@ int exec_instruction(CPU *cpu, Instruction inst) {
 
         case JNZ: {
             if (!(cpu->flags & FLAG_ZERO)) {
-                uint16_t jmp_addr = inst.operand1;
+                uint16_t offset = inst.operand1;
 
-                cpu->pc = jmp_addr;
+                cpu->pc = seg_offset(cpu->cs, offset);
                 pc_modified = true;
             }
 
@@ -229,9 +244,11 @@ int exec_instruction(CPU *cpu, Instruction inst) {
 
         case JE: {
             if (cpu->flags & FLAG_EQUAL) {
-                uint16_t jmp_addr = inst.operand1;
+                uint16_t offset = inst.operand1;
+                uint32_t phys_addr = ((uint32_t)(cpu->cs) << SEG_SHIFT) + offset;
+                phys_addr &= ADDR_MASK;
 
-                cpu->pc = jmp_addr;
+                cpu->pc = phys_addr;
                 pc_modified = true;
             }
 
@@ -240,9 +257,9 @@ int exec_instruction(CPU *cpu, Instruction inst) {
 
         case JNE: {
             if (!(cpu->flags & FLAG_EQUAL)) {
-                uint16_t jmp_addr = inst.operand1;
+                uint16_t offset = inst.operand1;
 
-                cpu->pc = jmp_addr;
+                cpu->pc = seg_offset(cpu->cs, offset);
                 pc_modified = true;
             }
 
@@ -251,9 +268,9 @@ int exec_instruction(CPU *cpu, Instruction inst) {
 
         case JL: {
             if (cpu->flags & FLAG_LESS) {
-                uint16_t jmp_addr = inst.operand1;
+                uint16_t offset = inst.operand1;
 
-                cpu->pc = jmp_addr;
+                cpu->pc = seg_offset(cpu->cs, offset);
                 pc_modified = true;
             }
 
@@ -262,9 +279,9 @@ int exec_instruction(CPU *cpu, Instruction inst) {
 
         case JLE: {
             if (cpu->flags & (FLAG_EQUAL | FLAG_LESS)) {
-                uint16_t jmp_addr = inst.operand1;
+                uint16_t offset = inst.operand1;
 
-                cpu->pc = jmp_addr;
+                cpu->pc = seg_offset(cpu->cs, offset);
                 pc_modified = true;
             }
 
@@ -273,9 +290,9 @@ int exec_instruction(CPU *cpu, Instruction inst) {
 
         case JG: {
             if (cpu->flags & FLAG_GREATER) {
-                uint16_t jmp_addr = inst.operand1;
+                uint16_t offset = inst.operand1;
 
-                cpu->pc = jmp_addr;
+                cpu->pc = seg_offset(cpu->cs, offset);
                 pc_modified = true;
             }
 
@@ -284,9 +301,9 @@ int exec_instruction(CPU *cpu, Instruction inst) {
 
         case JGE: {
             if (cpu->flags & (FLAG_EQUAL | FLAG_GREATER)) {
-                uint16_t jmp_addr = inst.operand1;
+                uint16_t offset = inst.operand1;
                 
-                cpu->pc = jmp_addr;
+                cpu->pc = seg_offset(cpu->cs, offset);
                 pc_modified = true;
             }
 
@@ -294,18 +311,20 @@ int exec_instruction(CPU *cpu, Instruction inst) {
         }
 
         case CALL: {
-            uint16_t return_addr = cpu->pc + inst_size;
-            uint16_t call_addr = inst.operand1;
+            uint16_t return_addr = cpu->pc + INST_SIZE;
+            uint16_t offset = inst.operand1;
 
             cpu_push(cpu, return_addr);
-            cpu->pc = call_addr;
+            cpu->pc = seg_offset(cpu->cs, offset);
             pc_modified = true;
 
             break;
         }
 
         case RET: {
-            cpu->pc = cpu_pop(cpu);
+            uint16_t offset = cpu_pop(cpu);
+
+            cpu->pc = seg_offset(cpu->cs, offset);
             pc_modified = true;
 
             break;
@@ -315,7 +334,11 @@ int exec_instruction(CPU *cpu, Instruction inst) {
             uint16_t int_num = cpu_pop(cpu);
 
             cpu->flags = cpu_pop(cpu);
-            cpu->pc = cpu_pop(cpu);
+
+            uint16_t offset = cpu_pop(cpu);
+            
+            cpu->cs = cpu_pop(cpu);
+            cpu->pc = seg_offset(cpu->cs, offset);
             pc_modified = true;
 
             break;
@@ -349,7 +372,7 @@ int exec_instruction(CPU *cpu, Instruction inst) {
     }
 
     if (!pc_modified)
-        cpu->pc += inst_size;
+        cpu->pc += INST_SIZE;
 
     return 0;
 }

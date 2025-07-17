@@ -39,7 +39,6 @@ enum ISA {
     HLT = 0xff
 };
 
-size_t get_instruction_size(Instruction inst);
 Instruction parse_instruction(CPU *cpu);
 int exec_instruction(CPU *cpu, Instruction inst);
 

@@ -1,4 +1,5 @@
 /.vscode
+/build
 /hexa
 /hexa_asm
 /*.bin
