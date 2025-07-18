@@ -17,6 +17,7 @@ Hexa is a custom 16-bit CPU architecture that aims to be efficient and versatile
 ``` bash
 # Clone the project
 git clone https://github.com/FunnyGuy9796/hexa.git
+cd hexa
 
 # Compile the project
 make all
