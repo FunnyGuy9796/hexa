@@ -74,12 +74,13 @@ typedef struct {
     uint16_t cycles_per_sleep;
     bool halted;
     bool interrupts_enabled;
-    bool tx_pending;
     uint8_t memory[MEM_SIZE];
 } CPU;
 
 void cpu_push(CPU *cpu, uint16_t val);
 uint16_t cpu_pop(CPU *cpu);
 uint32_t seg_offset(uint16_t segment, uint16_t offset);
+void cpu_interrupt(CPU *cpu, uint16_t status, Instruction inst);
+void cpu_exception(CPU *cpu, uint16_t status, Instruction inst);
 
 #endif

@@ -30,7 +30,7 @@ uint8_t *read_file(const char *filename, size_t *size) {
         return NULL;
     }
 
-    uint8_t *buffer = (uint8_t*)malloc(file_size);
+    uint8_t *buffer = (uint8_t *)malloc(file_size);
 
     if (!buffer) {
         fprintf(stderr, "Memory allocation failed\n");
@@ -57,53 +57,67 @@ uint8_t *read_file(const char *filename, size_t *size) {
 
 int main(int argc, char* argv[]) {
     if (argc <= 1) {
-        printf("Options:\n  -f | Provides the emulator with a bootable file\n  -h | Displays this list\n");
+        printf("Options:\n  -bios | Provides the emulator with the BIOS\n  -h | Displays this list\n");
 
         return 0;
     }
 
+    char *bios_name = NULL;
     char *filename = NULL;
 
     for (int i = 0; i < argc; i++) {
-        if (strcmp(argv[i], "-f") == 0 && i + 1 < argc)
-            filename = argv[++i];
+        if (strcmp(argv[i], "-bios") == 0 && i + 1 < argc)
+            bios_name = argv[++i];
         else if (strcmp(argv[i], "-h") == 0) {
-            printf("Options:\n  -f | Provides the emulator with a bootable file\n  -h | Displays this list\n");
+            printf("Options:\n  -bios | Provides the emulator with the BIOS\n  -h | Displays this list\n");
 
             return 0;
         }
     }
 
-    if (filename == NULL) {
-        fprintf(stderr, "No file provided\n  Use -h to see a list of all available options\n");
+    if (bios_name == NULL) {
+        fprintf(stderr, "No BIOS provided\n  Use -h to see a list of all available options\n");
 
         return 1;
     }
 
-    size_t size = 0;
-    uint8_t *data = read_file(filename, &size);
+    size_t bios_size = 0;
+    uint8_t *bios_data = read_file(bios_name, &bios_size);
 
-    if (!data) {
-        fprintf(stderr, "Failed to read file\n");
+    if (!bios_data) {
+        fprintf(stderr, "Failed to read BIOS file\n");
 
         return 1;
     }
 
-    printf("Searching for bootable program...\n");
+    size_t prog_size = 0;
+    uint8_t *prog_data = read_file("test.bin", &prog_size);
+
+    if (!prog_data) {
+        fprintf(stderr, "Failed to read test.bin\n");
+
+        return 1;
+    }
 
     CPU cpu;
 
     init_cpu(&cpu);
 
-    uint16_t load_status = load_program(&cpu, data);
+    uint16_t bios_status = load_program(&cpu, bios_data);
 
-    if (load_status == 0) {
-        printf("No bootable program found...\n");
+    if (bios_status == 0) {
+        printf("No executable BIOS found...\n");
 
         return 1;
     }
 
-    printf("Loaded %d bytes from hard disk\n", load_status);
+    uint16_t prog_status = load_program(&cpu, prog_data);
+
+    if (prog_status == 0) {
+        printf("No test.bin program found...\n");
+
+        return 1;
+    }
 
     while (!cpu.halted) {
         sleep_time_us = (1000000ULL * cpu.cycles_per_sleep) / CYCLES_PER_SECOND;
@@ -120,7 +134,7 @@ int main(int argc, char* argv[]) {
         }
     }
 
-    printf("\nCPU:\n  Clock Speed: %d MHz\n  R0: 0x%04x  R1: 0x%04x  R2: 0x%04x  R3: 0x%04x\n  R4: 0x%04x  R5: 0x%04x  R6: 0x%04x  R7: 0x%04x\n  PC: 0x%04x  IP: 0x%02x    SP: 0x%04x  CS: 0x%04x\n  DS: 0x%04x  SS: 0x%04x  FLAGS: 0x%04x\n",
+    printf("\nCPU:\n  Clock Speed: %d MHz\n  R0: 0x%04x  R1: 0x%04x  R2: 0x%04x  R3: 0x%04x\n  R4: 0x%04x  R5: 0x%04x  R6: 0x%04x  R7: 0x%04x\n  PC: 0x%05x IP: 0x%02x    SP: 0x%04x  CS: 0x%04x\n  DS: 0x%04x  SS: 0x%04x  FLAGS: 0x%04x\n",
         CYCLES_PER_SECOND / 1000000, cpu.registers[0], cpu.registers[1], cpu.registers[2], cpu.registers[3], cpu.registers[4], cpu.registers[5], cpu.registers[6], cpu.registers[7], cpu.pc, cpu.ip, cpu.sp, cpu.cs, cpu.ds, cpu.ss, cpu.flags);
     
     return 0;

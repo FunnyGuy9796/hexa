@@ -24,7 +24,7 @@ int exec_instruction(CPU *cpu, Instruction inst) {
     
     switch (inst.opcode) {
         case MOV: {
-            bool isSP = false, isPC = false, isCS = false, isSS = false, isDS = false;
+            bool isSP = false, isPC = false, isCS = false, isSS = false, isDS = false, isFLAGS = false;
 
             if (inst.mode1 != MODE_VAL_IND || !is_reg(inst.operand1)) {
                 if (inst.operand1 == SP)
@@ -37,37 +37,26 @@ int exec_instruction(CPU *cpu, Instruction inst) {
                     isSS = true;
                 else if (inst.operand1 == DS)
                     isDS = true;
+                else if (inst.operand1 == FLAGS)
+                    isFLAGS = true;
                 else
                     return 1;
             }
-            
-            if (inst.mode2 == MODE_VAL_IMM) {
-                if (isSP)
-                    cpu->sp = inst.operand2;
-                else if (isPC)
-                    cpu->pc = inst.operand2;
-                else if (isCS)
-                    cpu->cs = inst.operand2;
-                else if (isSS)
-                    cpu->ss = inst.operand2;
-                else if (isDS)
-                    cpu->ds = inst.operand2;
-                else
-                    cpu->registers[inst.operand1] = inst.operand2;
-            } else {
-                if (isSP)
-                    cpu->sp = cpu->registers[inst.operand2];
-                else if (isPC)
-                    cpu->pc = cpu->registers[inst.operand2];
-                else if (isCS)
-                    cpu->cs = cpu->registers[inst.operand2];
-                else if (isSS)
-                    cpu->ss = cpu->registers[inst.operand2];
-                else if (isDS)
-                    cpu->ds = cpu->registers[inst.operand2];
-                else
-                    cpu->registers[inst.operand1] = cpu->registers[inst.operand2];
-            }
+
+            if (isSP)
+                cpu->sp = (inst.mode2 == MODE_VAL_IMM) ? inst.operand2 : cpu->registers[inst.operand2];
+            else if (isPC)
+                cpu->pc = (inst.mode2 == MODE_VAL_IMM) ? inst.operand2 : cpu->registers[inst.operand2];
+            else if (isCS)
+                cpu->cs = (inst.mode2 == MODE_VAL_IMM) ? inst.operand2 : cpu->registers[inst.operand2];
+            else if (isSS)
+                cpu->ss = (inst.mode2 == MODE_VAL_IMM) ? inst.operand2 : cpu->registers[inst.operand2];
+            else if (isDS)
+                cpu->ds = (inst.mode2 == MODE_VAL_IMM) ? inst.operand2 : cpu->registers[inst.operand2];
+            else if (isFLAGS)
+                cpu->flags = (inst.mode2 == MODE_VAL_IMM) ? inst.operand2 : cpu->registers[inst.operand2];
+            else
+                cpu->registers[inst.operand1] = (inst.mode2 == MODE_VAL_IMM) ? inst.operand2 : cpu->registers[inst.operand2];
 
             break;
         }
@@ -312,10 +301,12 @@ int exec_instruction(CPU *cpu, Instruction inst) {
 
         case CALL: {
             uint16_t return_addr = cpu->pc + INST_SIZE;
-            uint16_t offset = inst.operand1;
+            uint16_t return_offset = return_addr - (cpu->cs << SEG_SHIFT);
+            uint16_t target_addr = inst.operand1;
+            uint16_t target_offset = target_addr - (cpu->cs << SEG_SHIFT);
 
-            cpu_push(cpu, return_addr);
-            cpu->pc = seg_offset(cpu->cs, offset);
+            cpu_push(cpu, return_offset);
+            cpu->pc = seg_offset(cpu->cs, target_offset);
             pc_modified = true;
 
             break;
@@ -352,6 +343,26 @@ int exec_instruction(CPU *cpu, Instruction inst) {
 
         case STI: {
             cpu->interrupts_enabled = true;
+
+            break;
+        }
+
+        case INT: {
+            uint16_t int_num = inst.operand1;
+
+            cpu_push(cpu, cpu->cs);
+            cpu_push(cpu, cpu->pc + INST_SIZE);
+            cpu_push(cpu, cpu->flags);
+            cpu_push(cpu, int_num);
+
+            uint32_t ivt_entry = IVT_ADDR + (int_num * 4);
+            uint16_t offset = cpu->memory[ivt_entry] | (cpu->memory[ivt_entry + 1] << 8);
+            uint16_t segment = cpu->memory[ivt_entry + 2] | (cpu->memory[ivt_entry + 3] << 8);
+
+            cpu->cs = segment;
+            cpu->pc = seg_offset(segment, offset);
+
+            pc_modified = true;
 
             break;
         }
