@@ -58,7 +58,7 @@ An instruction that may look like `mov R0, #1` will be assembled to the bytes `0
 | `0x02` | Invalid Operand  |
 | `0x03` | Unaligned Access |
 
-## Memory Map
+### Memory Map
 | Type                      | Start   | End     | Size      |
 |---------------------------|---------|---------|-----------|
 | General Purpose Registers | 0x00000 | 0x00007 | 8 bytes   |
