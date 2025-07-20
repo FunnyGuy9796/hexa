@@ -1,0 +1,4 @@
+number:     type:       
+0x01        invalid opcode
+0x02        invalid operand
+0x03        unaligned access

@@ -32,3 +32,41 @@ Currently, the BIOS does not support dynamic disk loading. Therefore, test.bin i
 
 ## Contributing
 Because this project and CPU design are in an early stage this is not open to contributions but advice and suggestions are strongly encouraged.
+
+## Documentation
+Programming using the Hexa ISA is fairly simple as it is designed to somewhat resemble x86 assembly.
+
+### Instruction Format
+All instructions are 8 bytes in size including a byte for padding in order to maintain memory alignment.
+
+An instruction that may look like `mov R0, #1` will be assembled to the bytes `0x00 0x01 0x00 0x00 0x00 0x00 0x01 0x00`.
+- The first byte `0x00` corresponds to the opcode (the `mov` instruction)
+- The second byte `0x01` corresponds to the mode of the first operand (`0x00` for immediate and `0x01` for indirect)
+- The third and fourth bytes corresponds to the first operand (`0x00 0x00` for R0)
+- The fifth byte serves the same purpose as the second byte, indicating the mode of the second operand
+- The sixth and seventh bytes `0x00 0x01` correspond to the second operand (the literal `#1`)
+- Number literals must be denoted by "#" in order for the assembler to recognize them properly
+  - This includes any usage of memory addresses as the address itself is treated as a literal number by the assembler and is only identified as an address by the CPU
+- All general and special registers may be referenced simply by their name and any usage will always refer to their immediate value
+- All instructions (with the exception of ST and LD) only allow interaction between registers and immediate values
+  - Any incorrect usage of values in an instruction will generate an "Invalid Operand" exception (see [CPU Exceptions](#cpu-exceptions))
+
+### CPU Exceptions
+| Number | Description      |
+|--------|------------------|
+| `0x01` | Invalid Opcode   |
+| `0x02` | Invalid Operand  |
+| `0x03` | Unaligned Access |
+
+## Memory Map
+| Type                      | Start   | End     | Size      |
+|---------------------------|---------|---------|-----------|
+| General Purpose Registers | 0x00000 | 0x00007 | 8 bytes   |
+| Special Registers         | 0x00008 | 0x0000f | 8 bytes   |
+| Interupt Vector Table     | 0x00010 | 0x0010f | 256 bytes |
+| Keyboard                  | 0x00110 | 0x00113 | 4 bytes   |
+| Timer                     | 0x00114 | 0x00119 | 6 bytes   |
+| Serial Port               | 0x0011a | 0x0011d | 4 bytes   |
+| Framebuffer               | 0x0011e | 0x1011d | 64 KB     |
+| Usable Memory             | 0x1011e | 0xffe5f | 0.98 MB   |
+| BIOS                      | 0xffe60 | 0xfffff | 416 bytes |

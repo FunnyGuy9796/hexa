@@ -1,32 +1,29 @@
-org 0xffcf:0x000f
+org 0xff00:0x0e60
 
 start:
-    mov R0, #0x0
-    mov R1, #0x0
-    mov R2, #0x0
-    mov R3, #0x0
-    mov R4, #0x0
-    mov R5, #0x0
-    mov R6, #0x0
-    mov R7, #0x0
+    mov R0, #0x0000
+    mov R1, #0x0000
+    mov R2, #0x0000
+    mov R3, #0x0000
+    mov R4, #0x0000
+    mov R5, #0x0000
+    mov R6, #0x0000
+    mov R7, #0x0000
     mov SP, #0xffff
-    mov SS, #0x0f
-    mov DS, #0x0
-    mov FLAGS, #0x0
+    mov SS, #0x000f
+    mov DS, #0x0000
 
     st #0x011c, #0x1
 
     call print_boot
 
-    mov SP, #0x0
-    mov SS, #0x0
+    mov SP, #0x0000
+    mov SS, #0x0000
 
-    st #0x001c, #0x03
-    st #0x001d, #0x00
-    st #0x001e, #0xea
-    st #0x001f, #0xff
+    st #0x001c, #0x0fc0
+    st #0x001e, #0xff00
 
-    mov CS, #0x0
+    mov CS, #0x1000
 
     jmp #0x011e
 
@@ -62,13 +59,18 @@ print_boot:
     ret
 
 print_serial:
-    mov R0, #0x011a
+    push DS
 
-    st R0, R7
+    mov DS, #0x0000
 
-    mov R0, #0x0
+    mov R6, #0x011a
+
+    st R6, R7
+
+    mov R6, #0x0000
+
+    pop DS
 
     iret
 
-db 0x88
-db 0xcc
+dw 0x88cc

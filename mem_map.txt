@@ -2,12 +2,15 @@ total size: 1 MB (1048576 bytes)
 
 type:                           start:      end:        size:
 general purpose registers       0x00000     0x00007     8 bytes
-special registers               0x00008     0x0000e     7 bytes
-padding (reserved)              0x0000f     0x0000f     1 bytes
+special registers               0x00008     0x0000f     8 bytes
 interrupt vector table          0x00010     0x0010f     256 bytes
 
 keyboard                        0x00110     0x00113     4 bytes (key value, key status, key ctrl status, padding)
 timer                           0x00114     0x00119     6 byte (timer ctrl, timer status, counter L, counter H, compare L, compare H)
-serial port                     0x0011a     0x0011d     4 bytes (serial data[1]. serial data[2], serial status, serial ctrl)
+serial port                     0x0011a     0x0011d     4 bytes (serial data, serial status, serial ctrl, padding)
 
-usable memory                   0x0011e     0xfffff     0.99 MB (1048290 bytes)
+framebuffer                     0x0011e     0x1011d     64 KB
+
+usable memory                   0x1011e     0xffe5f     0.98 MB (982338 bytes)
+
+bios                            0xffe60     0xfffff     416 bytes

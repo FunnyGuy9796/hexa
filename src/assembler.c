@@ -105,6 +105,8 @@ uint16_t get_register(const char *str) {
         return SS;
     else if (strcmp(str, "DS") == 0)
         return DS;
+    else if (strcmp(str, "US") == 0)
+        return US;
     
     return 0;
 }
@@ -116,7 +118,7 @@ uint32_t first_pass(FILE *file) {
     while (fgets(line, sizeof(line), file)) {
         trim(line);
         
-        if (line[0] == '\0' || line[0] == ';') continue;
+        if (line[0] == '\0' || line[0] == '\n' || line[0] == ';') continue;
 
         if (strncmp(line, "org", 3) == 0) {
             unsigned int seg = 0, off = 0;
@@ -142,6 +144,10 @@ uint32_t first_pass(FILE *file) {
 
         if (strncmp(line, "db", 2) == 0) {
             pc++;
+
+            continue;
+        } else if (strncmp(line, "dw", 2) == 0) {
+            pc += 2;
 
             continue;
         }
@@ -194,7 +200,7 @@ int second_pass(FILE *in, FILE *out) {
         curr_line++;
         trim(line);
 
-        if (line[0] == '\0' || line[0] == ';') continue;
+        if (line[0] == '\0' || line[0] == '\n' || line[0] == ';') continue;
         if (strncmp(line, "org", 3) == 0) continue;
         if (strchr(line, ':')) continue;
 
@@ -205,6 +211,17 @@ int second_pass(FILE *in, FILE *out) {
                 fputc(byte & 0xff, out);
             
             pc++;
+
+            continue;
+        } else if (strncmp(line, "dw", 2) == 0) {
+            unsigned int word;
+
+            if (sscanf(line + 2, "%x", &word) == 1) {
+                fputc((word >> 8) & 0xff, out);
+                fputc(word & 0xff, out);
+            }
+
+            pc += 2;
 
             continue;
         }
@@ -224,7 +241,8 @@ int second_pass(FILE *in, FILE *out) {
             .mode1 = MODE_VAL_IND,
             .operand1 = 0,
             .mode2 = MODE_VAL_IND,
-            .operand2 = 0
+            .operand2 = 0,
+            .padding = 0
         };
 
         if (parts >= 2 && op1[0] == '#')
@@ -269,14 +287,15 @@ int second_pass(FILE *in, FILE *out) {
                 inst.operand2 = (uint16_t)strtol(op2, NULL, 0);
         }
 
-        printf("line %d: %s\n  addr: 0x%05x\n  bytes: 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x\n",
+        printf("line %d: %s\n  addr: 0x%05x\n  bytes: 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x\n",
             curr_line, line, pc,
             inst.opcode, inst.mode1,
             (inst.operand1 >> 8) & 0xff,
             inst.operand1 & 0xff,
             inst.mode2,
             (inst.operand2 >> 8) & 0xff,
-            inst.operand2 & 0xff
+            inst.operand2 & 0xff,
+            inst.padding
         );
 
         fputc(inst.opcode, out);
@@ -286,6 +305,7 @@ int second_pass(FILE *in, FILE *out) {
         fputc(inst.mode2, out);
         fputc((inst.operand2 >> 8) & 0xff, out);
         fputc(inst.operand2 & 0xff, out);
+        fputc(inst.padding, out);
 
         pc += INST_SIZE;
     }

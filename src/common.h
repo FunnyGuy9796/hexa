@@ -10,7 +10,7 @@
 
 #define ADDR_MASK 0xfffff
 #define SEG_SHIFT 4
-#define INST_SIZE 7
+#define INST_SIZE 8
 
 #define REG_NUM 8
 #define MEM_SIZE (1 << 20)
@@ -18,16 +18,24 @@
 #define MODE_VAL_IMM 0x00
 #define MODE_VAL_IND 0x01
 
-#define START_ADDR 0x0011e
+#define START_ADDR 0x1011e
 #define IVT_ADDR 0x00010
+#define FRAMEBUFFER_ADDR 0x0011e
+
+#define FRAMEBUFFER_WIDTH 320
+#define FRAMEBUFFER_HEIGHT 200
 
 #define FLAG_EQUAL (1 << 0)
 #define FLAG_LESS (1 << 1)
 #define FLAG_GREATER (1 << 2)
 #define FLAG_ZERO (1 << 3)
 
+#define FLAG_INT_ENABLED (1 << 4)
+#define FLAG_INT_DONE (1 << 5)
+#define FLAG_HALTED (1 << 6)
+
 #define SERIAL_DATA 0x0011a
-#define SERIAL_STATUS 0x0011c
+#define SERIAL_STATUS 0x0011b
 #define SERIAL_CTRL 0x0011d
 
 #define SERIAL_STATUS_TX_READY (1 << 0)
@@ -47,10 +55,11 @@ enum REGS {
     CS = 0x08,
     SS = 0x09,
     DS = 0x0a,
-    PC = 0x0b,
-    IP = 0x0c,
-    SP = 0x0d,
-    FLAGS = 0x0e
+    US = 0x0b,
+    PC = 0x0c,
+    IP = 0x0d,
+    SP = 0x0e,
+    FLAGS = 0x0f
 };
 
 typedef struct {
@@ -59,6 +68,7 @@ typedef struct {
     uint16_t operand1;
     uint8_t mode2;
     uint16_t operand2;
+    uint8_t padding;
 } Instruction;
 
 typedef struct {
@@ -66,14 +76,13 @@ typedef struct {
     uint16_t cs;
     uint16_t ss;
     uint16_t ds;
+    uint16_t us;
     uint32_t pc;
     uint8_t ip;
     uint16_t sp;
     uint16_t flags;
     uint16_t cycle_count;
     uint16_t cycles_per_sleep;
-    bool halted;
-    bool interrupts_enabled;
     uint8_t memory[MEM_SIZE];
 } CPU;
 

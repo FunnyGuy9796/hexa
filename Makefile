@@ -1,5 +1,6 @@
 CC := gcc
-CFLAGS := -g -O0
+CFLAGS := -g -O0 $(shell sdl2-config --cflags)
+LDFLAGS := $(shell sdl2-config --libs)
 
 SRC_DIR := src
 BUILD_DIR := build
@@ -15,10 +16,10 @@ hexa_asm_OBJS := $(patsubst $(SRC_DIR)/%.c, $(BUILD_DIR)/%.o, $(hexa_asm_SRCS))
 all: $(BINARIES)
 
 hexa: $(hexa_OBJS)
-	$(CC) $(CFLAGS) -o $@ $^
+	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
 
 hexa_asm: $(hexa_asm_OBJS)
-	$(CC) $(CFLAGS) -o $@ $^
+	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
 
 $(BUILD_DIR)/%.o: $(SRC_DIR)/%.c
 	@mkdir -p $(dir $@)

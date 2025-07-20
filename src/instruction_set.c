@@ -27,20 +27,46 @@ int exec_instruction(CPU *cpu, Instruction inst) {
             bool isSP = false, isPC = false, isCS = false, isSS = false, isDS = false, isFLAGS = false;
 
             if (inst.mode1 != MODE_VAL_IND || !is_reg(inst.operand1)) {
-                if (inst.operand1 == SP)
-                    isSP = true;
-                else if (inst.operand1 == PC)
-                    isPC = true;
-                else if (inst.operand1 == CS)
-                    isCS = true;
-                else if (inst.operand1 == SS)
-                    isSS = true;
-                else if (inst.operand1 == DS)
-                    isDS = true;
-                else if (inst.operand1 == FLAGS)
-                    isFLAGS = true;
-                else
-                    return 1;
+                switch (inst.operand1) {
+                    case SP: {
+                        isSP = true;
+
+                        break;
+                    }
+
+                    case PC: {
+                        isPC = true;
+
+                        break;
+                    }
+
+                    case CS: {
+                        isCS = true;
+
+                        break;
+                    }
+
+                    case SS: {
+                        isSS = true;
+
+                        break;
+                    }
+
+                    case DS: {
+                        isDS = true;
+
+                        break;
+                    }
+
+                    case FLAGS: {
+                        isFLAGS = true;
+
+                        break;
+                    }
+
+                    default:
+                        return 2;
+                }
             }
 
             if (isSP)
@@ -65,9 +91,12 @@ int exec_instruction(CPU *cpu, Instruction inst) {
             uint16_t offset = (inst.mode2 == MODE_VAL_IMM) ? inst.operand2 : cpu->registers[inst.operand2];
 
             if (inst.mode1 != MODE_VAL_IND || !is_reg(inst.operand1))
-                return 1;
+                return 2;
             
             uint32_t phys_addr = seg_offset(cpu->ds, offset);
+
+            if (phys_addr % 2 != 0)
+                return 3;
             
             cpu->registers[inst.operand1] = cpu->memory[phys_addr] | (cpu->memory[phys_addr + 1] << 8);
 
@@ -79,6 +108,9 @@ int exec_instruction(CPU *cpu, Instruction inst) {
             uint16_t value = (inst.mode2 == MODE_VAL_IMM) ? inst.operand2 : cpu->registers[inst.operand2];
             uint32_t phys_addr = seg_offset(cpu->ds, offset);
 
+            if (phys_addr % 2 != 0)
+                return 3;
+
             cpu->memory[phys_addr] = value & 0xff;
             cpu->memory[phys_addr + 1] = (value >> 8) & 0xff;
 
@@ -89,18 +121,101 @@ int exec_instruction(CPU *cpu, Instruction inst) {
         }
 
         case PUSH: {
-            uint16_t value = (inst.mode1 == MODE_VAL_IND) ? (is_reg(inst.operand1) ? cpu->registers[inst.operand1] : (cpu->memory[inst.operand1] | cpu->memory[inst.operand1 + 1] << 8)) : inst.operand1;
+            uint16_t offset = inst.operand1;
+            uint32_t phys_addr = seg_offset(cpu->ds, offset);
+
+            if (phys_addr % 2 != 0)
+                return 3;
             
+            uint16_t value;
+
+            if (inst.mode1 == MODE_VAL_IND) {
+                if (!is_reg(inst.operand1))
+                    switch (inst.operand1) {
+                        case CS: {
+                            value = cpu->cs;
+
+                            break;
+                        }
+
+                        case SS: {
+                            value = cpu->ss;
+
+                            break;
+                        }
+
+                        case DS: {
+                            value = cpu->ds;
+
+                            break;
+                        }
+
+                        case FLAGS: {
+                            value = cpu->flags;
+
+                            break;
+                        }
+
+                        default:
+                            return 2;
+                    }
+                else
+                    value = cpu->registers[inst.operand1];
+            } else
+                value = inst.operand1;
+
             cpu_push(cpu, value);
 
             break;
         }
 
         case POP: {
-            if (inst.mode1 != MODE_VAL_IND || !is_reg(inst.operand1))
-                return 1;
+            if (inst.mode1 != MODE_VAL_IND)
+                return 2;
             
-            cpu->registers[inst.operand1] = cpu_pop(cpu);
+            bool isCS = false, isSS = false, isDS = false, isFLAGS = false;
+            
+            if (!is_reg(inst.operand1)) {
+                switch (inst.operand1) {
+                    case CS: {
+                        isCS = true;
+
+                        break;
+                    }
+
+                    case SS: {
+                        isSS = true;
+
+                        break;
+                    }
+
+                    case DS: {
+                        isDS = true;
+
+                        break;
+                    }
+
+                    case FLAGS: {
+                        isFLAGS = true;
+
+                        break;
+                    }
+
+                    default:
+                        return 2;
+                }
+            }
+            
+            if (isCS)
+                cpu->cs = cpu_pop(cpu);
+            else if (isSS)
+                cpu->ss = cpu_pop(cpu);
+            else if (isDS)
+                cpu->ds = cpu_pop(cpu);
+            else if (isFLAGS)
+                cpu->flags = cpu_pop(cpu);
+            else
+                cpu->registers[inst.operand1] = cpu_pop(cpu);
 
             break;
         }
@@ -108,9 +223,15 @@ int exec_instruction(CPU *cpu, Instruction inst) {
         case ADD:
         case SUB: {
             if (inst.mode1 != MODE_VAL_IND || !is_reg(inst.operand1))
-                return 1;
+                return 2;
             
-            uint16_t value = (inst.mode2 == MODE_VAL_IND) ? (is_reg(inst.operand2) ? cpu->registers[inst.operand2] : (cpu->memory[inst.operand2] | cpu->memory[inst.operand2 + 1] << 8)) : inst.operand2;
+            uint16_t offset = inst.operand2;
+            uint32_t phys_addr = seg_offset(cpu->ds, offset);
+
+            if (phys_addr % 2 != 0)
+                return 3;
+
+            uint16_t value = (inst.mode2 == MODE_VAL_IND) ? (is_reg(inst.operand2) ? cpu->registers[inst.operand2] : (cpu->memory[phys_addr] | cpu->memory[phys_addr + 1] << 8)) : inst.operand2;
 
             cpu->registers[inst.operand1] = (inst.opcode == ADD) ? cpu->registers[inst.operand1] + value : cpu->registers[inst.operand1] - value;
 
@@ -120,7 +241,7 @@ int exec_instruction(CPU *cpu, Instruction inst) {
         case INC:
         case DEC: {
             if (inst.mode1 != MODE_VAL_IND || !is_reg(inst.operand1))
-                return 1;
+                return 2;
             
             cpu->registers[inst.operand1] = (inst.opcode == INC) ? cpu->registers[inst.operand1] + 1 : cpu->registers[inst.operand1] - 1;
 
@@ -129,9 +250,15 @@ int exec_instruction(CPU *cpu, Instruction inst) {
 
         case AND: {
             if (inst.mode1 != MODE_VAL_IND || !is_reg(inst.operand1))
-                return 1;
+                return 2;
             
-            uint16_t value = (inst.mode2 == MODE_VAL_IND) ? (is_reg(inst.operand2) ? cpu->registers[inst.operand2] : (cpu->memory[inst.operand2] | cpu->memory[inst.operand2 + 1] << 8)) : inst.operand2;
+            uint16_t offset = inst.operand2;
+            uint32_t phys_addr = seg_offset(cpu->ds, offset);
+
+            if (phys_addr % 2 != 0)
+                return 3;
+            
+            uint16_t value = (inst.mode2 == MODE_VAL_IND) ? (is_reg(inst.operand2) ? cpu->registers[inst.operand2] : (cpu->memory[phys_addr] | cpu->memory[phys_addr + 1] << 8)) : inst.operand2;
 
             cpu->registers[inst.operand1] &= value;
 
@@ -140,9 +267,15 @@ int exec_instruction(CPU *cpu, Instruction inst) {
 
         case OR: {
             if (inst.mode1 != MODE_VAL_IND || !is_reg(inst.operand1))
-                return 1;
+                return 2;
             
-            uint16_t value = (inst.mode2 == MODE_VAL_IND) ? (is_reg(inst.operand2) ? cpu->registers[inst.operand2] : (cpu->memory[inst.operand2] | cpu->memory[inst.operand2 + 1] << 8)) : inst.operand2;
+            uint16_t offset = inst.operand2;
+            uint32_t phys_addr = seg_offset(cpu->ds, offset);
+
+            if (phys_addr % 2 != 0)
+                return 3;
+
+            uint16_t value = (inst.mode2 == MODE_VAL_IND) ? (is_reg(inst.operand2) ? cpu->registers[inst.operand2] : (cpu->memory[phys_addr] | cpu->memory[phys_addr + 1] << 8)) : inst.operand2;
 
             cpu->registers[inst.operand1] |= value;
 
@@ -151,9 +284,15 @@ int exec_instruction(CPU *cpu, Instruction inst) {
 
         case XOR: {
             if (inst.mode1 != MODE_VAL_IND || !is_reg(inst.operand1))
-                return 1;
+                return 2;
             
-            uint16_t value = (inst.mode2 == MODE_VAL_IND) ? (is_reg(inst.operand2) ? cpu->registers[inst.operand2] : (cpu->memory[inst.operand2] | cpu->memory[inst.operand2 + 1] << 8)) : inst.operand2;
+            uint16_t offset = inst.operand2;
+            uint32_t phys_addr = seg_offset(cpu->ds, offset);
+
+            if (phys_addr % 2 != 0)
+                return 3;
+            
+            uint16_t value = (inst.mode2 == MODE_VAL_IND) ? (is_reg(inst.operand2) ? cpu->registers[inst.operand2] : (cpu->memory[phys_addr] | cpu->memory[phys_addr + 1] << 8)) : inst.operand2;
 
             cpu->registers[inst.operand1] ^= value;
 
@@ -162,7 +301,7 @@ int exec_instruction(CPU *cpu, Instruction inst) {
 
         case NOT: {
             if (inst.mode1 != MODE_VAL_IND || !is_reg(inst.operand1))
-                return 1;
+                return 2;
             
             cpu->registers[inst.operand1] = ~cpu->registers[inst.operand1];
 
@@ -172,9 +311,15 @@ int exec_instruction(CPU *cpu, Instruction inst) {
         case SHL:
         case SHR: {
             if (inst.mode1 != MODE_VAL_IND || !is_reg(inst.operand1))
-                return 1;
+                return 2;
             
-            uint16_t value = (inst.mode2 == MODE_VAL_IND) ? (is_reg(inst.operand2) ? cpu->registers[inst.operand2] : (cpu->memory[inst.operand2] | cpu->memory[inst.operand2 + 1] << 8)) : inst.operand2;
+            uint16_t offset = inst.operand2;
+            uint32_t phys_addr = seg_offset(cpu->ds, offset);
+
+            if (phys_addr % 2 != 0)
+                return 3;
+            
+            uint16_t value = (inst.mode2 == MODE_VAL_IND) ? (is_reg(inst.operand2) ? cpu->registers[inst.operand2] : (cpu->memory[phys_addr] | cpu->memory[phys_addr + 1] << 8)) : inst.operand2;
 
             cpu->registers[inst.operand1] = (inst.opcode == SHL) ? cpu->registers[inst.operand1] << value : cpu->registers[inst.operand1] >> value;
 
@@ -183,10 +328,16 @@ int exec_instruction(CPU *cpu, Instruction inst) {
 
         case CMP: {
             if (inst.mode1 != MODE_VAL_IND || !is_reg(inst.operand1))
-                return 1;
+                return 2;
+            
+            uint16_t offset = inst.operand2;
+            uint32_t phys_addr = seg_offset(cpu->ds, offset);
+
+            if (phys_addr % 2 != 0)
+                return 3;
             
             uint16_t val1 = cpu->registers[inst.operand1];
-            uint16_t val2 = (inst.mode2 == MODE_VAL_IND) ? (is_reg(inst.operand2) ? cpu->registers[inst.operand2] : (cpu->memory[inst.operand2] | cpu->memory[inst.operand2 + 1] << 8)) : inst.operand2;
+            uint16_t val2 = (inst.mode2 == MODE_VAL_IND) ? (is_reg(inst.operand2) ? cpu->registers[inst.operand2] : (cpu->memory[phys_addr] | cpu->memory[phys_addr + 1] << 8)) : inst.operand2;
             
             cpu->flags &= ~(FLAG_EQUAL | FLAG_LESS | FLAG_GREATER | FLAG_ZERO);
 
@@ -332,17 +483,19 @@ int exec_instruction(CPU *cpu, Instruction inst) {
             cpu->pc = seg_offset(cpu->cs, offset);
             pc_modified = true;
 
+            cpu->flags |= FLAG_INT_DONE;
+
             break;
         }
 
         case CLI: {
-            cpu->interrupts_enabled = false;
+            cpu->flags &= ~FLAG_INT_ENABLED;
 
             break;
         }
 
         case STI: {
-            cpu->interrupts_enabled = true;
+            cpu->flags |= FLAG_INT_ENABLED;
 
             break;
         }
@@ -372,13 +525,13 @@ int exec_instruction(CPU *cpu, Instruction inst) {
         }
 
         case HLT: {
-            cpu->halted = true;
+            cpu->flags |= FLAG_HALTED;
 
             break;
         }
 
         default: {
-            return 1;
+            return 2;
         }
     }
 
