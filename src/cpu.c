@@ -107,10 +107,16 @@ void cpu_interrupt(CPU *cpu, uint16_t status, Instruction inst) {
     if (!(cpu->flags & FLAG_INT_ENABLED) || !(cpu->flags & FLAG_INT_DONE))
         return;
 
-    cpu_push(cpu, cpu->cs);
+    if (cpu->flags & FLAG_USER_MODE)
+        cpu_push(cpu, cpu->us);
+    else
+        cpu_push(cpu, cpu->cs);
+    
     cpu_push(cpu, cpu->pc + INST_SIZE);
     cpu_push(cpu, cpu->flags);
     cpu_push(cpu, status);
+
+    cpu->flags &= ~FLAG_USER_MODE;
 
     uint32_t ivt_entry = IVT_ADDR + (status * 4);
     uint16_t offset = cpu->memory[ivt_entry] | (cpu->memory[ivt_entry + 1] << 8);

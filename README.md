@@ -10,7 +10,7 @@ Hexa is a custom 16-bit CPU architecture that aims to be efficient and versatile
   - Timer
   - Keyboard
   - Serial (BIOS Software Interrupt)
-- Partial Exceptions
+- Exceptions
 - Simple Assembler
 
 ## Usage
@@ -24,9 +24,10 @@ make all
 # Assemble BIOS and test.asm
 ./hexa_asm -f bios.asm -o bios.bin
 ./hexa_asm -f test.asm -o test.bin
+cat test.bin > disk.img
 
 # Run the emulator
-./hexa -bios bios.bin
+./hexa -disk disk.img
 ```
 Currently, the BIOS does not support dynamic disk loading. Therefore, test.bin is required by the emulator for testing purposes.
 
@@ -45,28 +46,41 @@ An instruction that may look like `mov R0, #1` will be assembled to the bytes `0
 - The third and fourth bytes corresponds to the first operand (`0x00 0x00` for R0)
 - The fifth byte serves the same purpose as the second byte, indicating the mode of the second operand
 - The sixth and seventh bytes `0x00 0x01` correspond to the second operand (the literal `#1`)
-- Number literals must be denoted by "#" in order for the assembler to recognize them properly
+- Number literals must be denoted by `#` in order for the assembler to recognize them properly
   - This includes any usage of memory addresses as the address itself is treated as a literal number by the assembler and is only identified as an address by the CPU
 - All general and special registers may be referenced simply by their name and any usage will always refer to their immediate value
-- All instructions (with the exception of ST and LD) only allow interaction between registers and immediate values
+- All instructions (with the exception of `ST` and `LD`) only allow interaction between registers and immediate values
   - Any incorrect usage of values in an instruction will generate an "Invalid Operand" exception (see [CPU Exceptions](#cpu-exceptions))
+- All memory access done by programs is required to be word-aligned and any unaligned access will generate an "Unaligned Access" exception (see [CPU Exceptions](#cpu-exceptions))
+
+### CPU Interrupts
+| Number | Description |
+|--------|-------------|
+| `0x01` | Timer       |
+| `0x02` | Keyboard    |
+| `0x03` | Serial Port |
 
 ### CPU Exceptions
-| Number | Description      |
-|--------|------------------|
-| `0x01` | Invalid Opcode   |
-| `0x02` | Invalid Operand  |
-| `0x03` | Unaligned Access |
+| Number | Description                |
+|--------|----------------------------|
+| `0x01` | Invalid Opcode             |
+| `0x02` | Invalid Operand            |
+| `0x03` | Unaligned Access           |
+| `0x04` | General Protection         |
+| `0x05` | Illegal Instruction        |
+| `0x06` | Divide by Zero             |
+| `0x07` | Stack Overflow / Underflow |
+| `0x08` | Breakpoint                 |
 
 ### Memory Map
-| Type                      | Start   | End     | Size      |
-|---------------------------|---------|---------|-----------|
-| General Purpose Registers | 0x00000 | 0x00007 | 8 bytes   |
-| Special Registers         | 0x00008 | 0x0000f | 8 bytes   |
-| Interupt Vector Table     | 0x00010 | 0x0010f | 256 bytes |
-| Keyboard                  | 0x00110 | 0x00115 | 6 bytes   |
-| Timer                     | 0x00116 | 0x00121 | 12 bytes  |
-| Serial Port               | 0x00122 | 0x00127 | 6 bytes   |
-| Framebuffer               | 0x00128 | 0x10127 | 64 KB     |
-| Usable Memory             | 0x10128 | 0xffe67 | 0.98 MB   |
-| BIOS                      | 0xffe68 | 0xfffff | 416 bytes |
+| Type                      | Start     | End       | Size      |
+|---------------------------|-----------|-----------|-----------|
+| General Purpose Registers | `0x00000` | `0x00007` | 8 bytes   |
+| Special Registers         | `0x00008` | `0x0000f` | 8 bytes   |
+| Interupt Vector Table     | `0x00010` | `0x0010f` | 256 bytes |
+| Keyboard                  | `0x00110` | `0x00115` | 6 bytes   |
+| Timer                     | `0x00116` | `0x00121` | 12 bytes  |
+| Serial Port               | `0x00122` | `0x00127` | 6 bytes   |
+| Framebuffer               | `0x00128` | `0x0fb27` | 64 KB     |
+| Usable Memory             | `0x0fb28` | `0xffe67` | 0.98 MB   |
+| BIOS                      | `0xffe68` | `0xfffff` | 416 bytes |

@@ -9,8 +9,8 @@ keyboard                        0x00110     0x00115     6 bytes (key value, key 
 timer                           0x00116     0x00121     12 byte (timer ctrl, timer status, counter L, counter H, compare L, compare H)
 serial port                     0x00122     0x00127     6 bytes (serial data, serial status, serial ctrl)
 
-framebuffer                     0x00128     0x10127     64 KB
+framebuffer                     0x00128     0x0fb27     64 KB
 
-usable memory                   0x10128     0xffe67     0.98 MB (982334 bytes)
+usable memory                   0x0fb28     0xffe67     0.98 MB (983870 bytes)
 
 bios                            0xffe68     0xfffff     416 bytes

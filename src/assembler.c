@@ -22,6 +22,14 @@ uint16_t origin_seg;
 uint16_t origin_off;
 uint32_t pc;
 
+const char* get_file_ext(const char* filename) {
+    const char* dot = strrchr(filename, '.');
+    
+    if (!dot || dot == filename) return "";
+    
+    return dot + 1;
+}
+
 void trim(char *str) {
     char *end;
 
@@ -328,6 +336,14 @@ int main(int argc, char *argv[]) {
     }
 
     if (dump_file == NULL) {
+        const char *in_ext = get_file_ext(in_file);
+
+        if (strcmp(in_ext, "hxa") != 0) {
+            printf("Invalid file type %s\n", in_file);
+
+            return 1;
+        }
+
         FILE *input_file = fopen(in_file, "r");
 
         if (!input_file) {
@@ -366,6 +382,14 @@ int main(int argc, char *argv[]) {
 
         printf("Wrote %d bytes to %s successfully\n", file_size, out_file);
     } else {
+        const char *dump_ext = get_file_ext(dump_file);
+
+        if (strcmp(dump_ext, "hxa") != 0) {
+            printf("Invalid file type %s\n", dump_file);
+
+            return 1;
+        }
+
         FILE *hex_dump_file = fopen(dump_file, "rb");
 
         if (!hex_dump_file) {
@@ -407,7 +431,7 @@ int main(int argc, char *argv[]) {
                 printf("\n");
         }
 
-        printf("\n\n");
+        printf("\n\nDumped %d bytes\n", file_size);
     }
 
     return 0;

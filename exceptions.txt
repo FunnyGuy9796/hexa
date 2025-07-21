@@ -2,3 +2,8 @@ number:     type:
 0x01        invalid opcode
 0x02        invalid operand
 0x03        unaligned access
+0x04        general protection
+0x05        illegal instruction
+0x06        divide by zero
+0x07        stack overflow/underflow
+0x08        breakpoint

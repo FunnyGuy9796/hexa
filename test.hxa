@@ -1,4 +1,4 @@
-org 0x1000:0x011e
+org 0x0000:0xfb28
 
 start:
     mov SS, #0x000f
@@ -32,35 +32,15 @@ start:
     jmp draw
 
 draw:
-    st R0, #0xe0e0
+    st R0, #0xffff
 
     add R0, #2
-    cmp R0, #0xfffe
-    je inc_ds
-
-    mov R1, DS
-    cmp R1, #0x1000
-    je check_mem
+    cmp R0, #0xfb27
+    je done
 
     jmp draw
 
-inc_ds:
-    mov DS, #0x1000
-    jmp draw
-
-check_mem:
-    mov R7, #0x62
-    int #0x03
-
-    mov R7, #0x79
-    int #0x03
-
-    mov R7, #0x65
-    int #0x03
-
-    mov R7, #0x0a
-    int #0x03
-
+done:
     hlt
 
 dw 0x88cc

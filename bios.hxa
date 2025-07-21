@@ -22,9 +22,9 @@ start:
     st #0x001c, #0x0fc0
     st #0x001e, #0xff00
 
-    mov CS, #0x1000
+    mov CS, #0x0000
 
-    jmp #0x011e
+    jmp #0xfb28
 
     hlt
 

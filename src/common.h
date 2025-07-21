@@ -18,7 +18,8 @@
 #define MODE_VAL_IMM 0x00
 #define MODE_VAL_IND 0x01
 
-#define START_ADDR 0x1011e
+#define START_ADDR 0x0fb28
+#define BIOS_ADDR 0xffe68
 #define IVT_ADDR 0x00010
 
 #define FRAMEBUFFER_ADDR 0x00128
@@ -33,6 +34,7 @@
 #define FLAG_INT_ENABLED (1 << 4)
 #define FLAG_INT_DONE (1 << 5)
 #define FLAG_HALTED (1 << 6)
+#define FLAG_USER_MODE (1 << 7)
 
 #define SERIAL_DATA 0x00122
 #define SERIAL_STATUS 0x00124
