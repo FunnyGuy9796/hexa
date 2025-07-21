@@ -1,6 +1,10 @@
-org 0xff00:0x0e60
+org 0xff00:0x0e68
 
 start:
+    mov SP, #0xffff
+    mov SS, #0x000f
+    mov DS, #0x0000
+
     mov R0, #0x0000
     mov R1, #0x0000
     mov R2, #0x0000
@@ -9,11 +13,6 @@ start:
     mov R5, #0x0000
     mov R6, #0x0000
     mov R7, #0x0000
-    mov SP, #0xffff
-    mov SS, #0x000f
-    mov DS, #0x0000
-
-    st #0x011c, #0x1
 
     call print_boot
 
@@ -30,7 +29,7 @@ start:
     hlt
 
 print_boot:
-    mov R0, #0x011a
+    mov R0, #0x0122
 
     st R0, #0x62
     st R0, #0x6f
@@ -63,7 +62,7 @@ print_serial:
 
     mov DS, #0x0000
 
-    mov R6, #0x011a
+    mov R6, #0x0122
 
     st R6, R7
 

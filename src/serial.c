@@ -1,15 +1,16 @@
 #include "serial.h"
 
 void poll_serial(CPU *cpu) {
-    if (cpu->memory[SERIAL_STATUS] & SERIAL_STATUS_NEW_DATA) {
-        if (cpu->memory[SERIAL_STATUS] & SERIAL_STATUS_TX_READY) {
-            cpu->memory[SERIAL_STATUS] &= ~SERIAL_STATUS_NEW_DATA;
-            cpu->memory[SERIAL_STATUS] &= ~SERIAL_STATUS_TX_READY;
-            
-            putchar(cpu->memory[SERIAL_DATA]);
-            fflush(stdout);
+    uint8_t *status = &cpu->memory[SERIAL_STATUS];
+    uint8_t *data = &cpu->memory[SERIAL_DATA];
 
-            cpu->memory[SERIAL_STATUS] |= SERIAL_STATUS_TX_READY;
-        }
+    if ((*status & SERIAL_STATUS_NEW_DATA) && (*status & SERIAL_STATUS_TX_READY)) {
+        *status &= ~SERIAL_STATUS_TX_READY;
+
+        putchar(*data);
+        fflush(stdout);
+
+        *status &= ~SERIAL_STATUS_NEW_DATA;
+        *status |= SERIAL_STATUS_TX_READY;
     }
 }

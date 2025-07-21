@@ -1,7 +1,7 @@
 #include "cpu.h"
 #include "instruction_set.h"
 
-void cpu_push(CPU *cpu, uint16_t val) {
+inline void cpu_push(CPU *cpu, uint16_t val) {
     uint32_t addr;
 
     cpu->sp--;
@@ -13,7 +13,7 @@ void cpu_push(CPU *cpu, uint16_t val) {
     cpu->memory[addr] = (uint8_t)((val >> 8) & 0xff);
 }
 
-uint16_t cpu_pop(CPU *cpu) {
+inline uint16_t cpu_pop(CPU *cpu) {
     uint32_t addr;
     uint8_t lo, hi;
 
@@ -28,7 +28,7 @@ uint16_t cpu_pop(CPU *cpu) {
     return (hi << 8) | lo;
 }
 
-uint32_t seg_offset(uint16_t segment, uint16_t offset) {
+inline uint32_t seg_offset(uint16_t segment, uint16_t offset) {
     return (((uint32_t)segment << SEG_SHIFT) + offset) & ADDR_MASK;
 }
 
@@ -36,11 +36,13 @@ void init_cpu(CPU *cpu) {
     cpu->cycle_count = 0;
     cpu->cycles_per_sleep = 0;
     cpu->cs = 0xff00;
-    cpu->pc = 0xffe60;
+    cpu->pc = 0xffe68;
     cpu->flags |= FLAG_INT_DONE;
     
     for (size_t i = 0; i < MEM_SIZE; i++)
         cpu->memory[i] = 0;
+    
+    cpu->memory[SERIAL_STATUS] |= SERIAL_STATUS_TX_READY;
 }
 
 uint32_t load_bios(CPU *cpu, uint8_t *bios) {
@@ -87,10 +89,9 @@ uint32_t load_program(CPU *cpu, uint8_t *disk, size_t disk_size) {
     return found ? total_loaded : 0;
 }
 
-int step_program(CPU *cpu) {
+int step_program(CPU *cpu, Instruction inst) {
     if (cpu->flags & FLAG_HALTED) return 0;
-
-    Instruction inst = parse_instruction(cpu);
+    
     int status = exec_instruction(cpu, inst);
 
     if (status != 0) {

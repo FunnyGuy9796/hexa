@@ -39,6 +39,8 @@ enum ISA {
     HLT = 0xff
 };
 
+extern bool framebuffer_dirty;
+
 Instruction parse_instruction(CPU *cpu);
 int exec_instruction(CPU *cpu, Instruction inst);
 

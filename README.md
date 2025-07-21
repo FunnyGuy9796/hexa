@@ -64,9 +64,9 @@ An instruction that may look like `mov R0, #1` will be assembled to the bytes `0
 | General Purpose Registers | 0x00000 | 0x00007 | 8 bytes   |
 | Special Registers         | 0x00008 | 0x0000f | 8 bytes   |
 | Interupt Vector Table     | 0x00010 | 0x0010f | 256 bytes |
-| Keyboard                  | 0x00110 | 0x00113 | 4 bytes   |
-| Timer                     | 0x00114 | 0x00119 | 6 bytes   |
-| Serial Port               | 0x0011a | 0x0011d | 4 bytes   |
-| Framebuffer               | 0x0011e | 0x1011d | 64 KB     |
-| Usable Memory             | 0x1011e | 0xffe5f | 0.98 MB   |
-| BIOS                      | 0xffe60 | 0xfffff | 416 bytes |
+| Keyboard                  | 0x00110 | 0x00115 | 6 bytes   |
+| Timer                     | 0x00116 | 0x00121 | 12 bytes  |
+| Serial Port               | 0x00122 | 0x00127 | 6 bytes   |
+| Framebuffer               | 0x00128 | 0x10127 | 64 KB     |
+| Usable Memory             | 0x10128 | 0xffe67 | 0.98 MB   |
+| BIOS                      | 0xffe68 | 0xfffff | 416 bytes |

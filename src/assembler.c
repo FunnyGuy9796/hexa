@@ -87,7 +87,7 @@ uint8_t parse_opcode(const char *str) {
     else if (strcasecmp(str, "NOP") == 0) return NOP;
     else if (strcasecmp(str, "HLT") == 0) return HLT;
 
-    return 0x100;
+    return -1;
 }
 
 uint16_t get_register(const char *str) {

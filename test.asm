@@ -27,12 +27,12 @@ start:
     mov R7, #0x0a
     int #0x03
 
-    mov R0, #0x011e
+    mov R0, #0x0128
 
     jmp draw
 
 draw:
-    st R0, #0xefef
+    st R0, #0xe0e0
 
     add R0, #2
     cmp R0, #0xfffe

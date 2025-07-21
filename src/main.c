@@ -15,8 +15,8 @@ SDL_Window *window = NULL;
 SDL_Renderer *renderer = NULL;
 SDL_Texture *texture = NULL;
 
-int width = 320;
-int height = 200;
+int width = FRAMEBUFFER_WIDTH;
+int height = FRAMEBUFFER_HEIGHT;
 
 uint16_t sleep_time_us;
 
@@ -38,6 +38,8 @@ void update_display(uint8_t *framebuffer) {
     SDL_RenderClear(renderer);
     SDL_RenderCopy(renderer, texture, NULL, NULL);
     SDL_RenderPresent(renderer);
+
+    framebuffer_dirty = false;
 }
 
 void cleanup_sdl() {
@@ -192,7 +194,8 @@ int main(int argc, char* argv[]) {
     bool running = true;
 
     while (running) {
-        int status = step_program(&cpu);
+        Instruction inst = parse_instruction(&cpu);
+        int status = step_program(&cpu, inst);
 
         if (status) {
             running = false;
@@ -216,9 +219,10 @@ int main(int argc, char* argv[]) {
                     running = false;
             }
 
-            update_display(framebuffer);
+            cpu_interrupt(&cpu, 0x01, inst);
 
-            cpu_interrupt(&cpu, 0x01, parse_instruction(&cpu));
+            if (framebuffer_dirty)
+                update_display(framebuffer);
         }
     }
 
