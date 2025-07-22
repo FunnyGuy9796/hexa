@@ -27,19 +27,16 @@ def convert_image_to_rgb332(image_path, output_bin_path):
     img = img.resize((320, 200))
     pixels = list(img.getdata())
 
-    words = bytearray()
+    bytes_out = bytearray()
 
-    for i in range(0, len(pixels), 2):
-        rgb1 = rgb24_to_rgb332(*pixels[i])
-        rgb2 = rgb24_to_rgb332(*pixels[i+1]) if i+1 < len(pixels) else 0
-        word = (rgb2 << 8) | rgb1
-        words.append(word & 0xFF)
-        words.append((word >> 8) & 0xFF)
+    for r, g, b in pixels:
+        rgb332 = rgb24_to_rgb332(r, g, b)
+        bytes_out.append(rgb332)
 
     with open(output_bin_path, 'wb') as f:
-        f.write(words)
+        f.write(bytes_out)
 
-    print(f"Written {len(words)} bytes to {output_bin_path}")
+    print(f"Written {len(bytes_out)} bytes to {output_bin_path}")
 
 width, height = 320, 200
 
@@ -70,3 +67,5 @@ hex_color = 0x2b66bc
 rgb332 = rgb24_to_rgb332_from_hex(hex_color)
 
 print(f"RGB332 value: 0x{rgb332:02X}")
+
+convert_image_to_rgb332("cat.jpg", "cat.rgb332")

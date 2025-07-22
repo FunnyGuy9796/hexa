@@ -35,8 +35,8 @@ inline uint32_t seg_offset(uint16_t segment, uint16_t offset) {
 void init_cpu(CPU *cpu) {
     cpu->cycle_count = 0;
     cpu->cycles_per_sleep = 0;
-    cpu->cs = 0xff00;
-    cpu->pc = 0xffe68;
+    cpu->cs = 0xf000;
+    cpu->pc = BIOS_ADDR;
     cpu->flags |= FLAG_INT_DONE;
     
     for (size_t i = 0; i < MEM_SIZE; i++)
