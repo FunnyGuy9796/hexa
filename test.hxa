@@ -1,4 +1,4 @@
-org 0x1000:0x0132
+org 0x1000:0x0134
 
 start:
     mov SS, #0x000f
@@ -28,7 +28,7 @@ start:
     int #0x03
 
     mov R0, #0x0132
-    mov R1, #0x0220
+    mov R1, #0x0224
 
 draw_loop:
     mov DS, #0x1000

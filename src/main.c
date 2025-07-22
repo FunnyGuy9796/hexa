@@ -203,7 +203,7 @@ int main(int argc, char* argv[]) {
     uint8_t *img_data = read_file("checkerboard.rgb332", &img_size);
 
     for (size_t i = 0; i < img_size; i++)
-        cpu.memory[0x10220 + i] = img_data[i];
+        cpu.memory[0x10224 + i] = img_data[i];
 
     init_sdl();
 

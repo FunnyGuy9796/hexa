@@ -10,8 +10,8 @@ timer                           0x00116     0x0011f     10 bytes (timer ctrl, ti
 serial port                     0x00120     0x00125     6 bytes (serial data, serial status, serial ctrl)
 disk                            0x00126     0x00131     12 bytes (disk status, disk command, disk lba L, disk lba H, disk count, padding)
 
-framebuffer                     0x00132     0x10130     64 KB (65535 bytes)
+framebuffer                     0x00132     0x10132     64 KB (65535 bytes)
 
-usable memory                   0x10132     0xffe67     0.98 MB (982324 bytes)
+usable memory                   0x10134     0xffe67     0.98 MB (982322 bytes)
 
 bios                            0xffe68     0xfffff     416 bytes

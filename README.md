@@ -59,6 +59,7 @@ An instruction that may look like `mov R0, #1` will be assembled to the bytes `0
 | `0x01` | Timer       |
 | `0x02` | Keyboard    |
 | `0x03` | Serial Port |
+| `0x04` | Disk        |
 
 ### CPU Exceptions
 | Number | Description                |
@@ -79,8 +80,9 @@ An instruction that may look like `mov R0, #1` will be assembled to the bytes `0
 | Special Registers         | `0x00008` | `0x0000f` | 8 bytes   |
 | Interupt Vector Table     | `0x00010` | `0x0010f` | 256 bytes |
 | Keyboard                  | `0x00110` | `0x00115` | 6 bytes   |
-| Timer                     | `0x00116` | `0x00121` | 12 bytes  |
-| Serial Port               | `0x00122` | `0x00127` | 6 bytes   |
-| Framebuffer               | `0x00128` | `0x0fb27` | 64 KB     |
-| Usable Memory             | `0x0fb28` | `0xffe67` | 0.98 MB   |
+| Timer                     | `0x00116` | `0x0011f` | 10 bytes  |
+| Serial Port               | `0x00120` | `0x00125` | 6 bytes   |
+| Disk                      | `0x00126` | `0x00131` | 12 bytes   |
+| Framebuffer               | `0x00132` | `0x10132` | 64 KB     |
+| Usable Memory             | `0x10134` | `0xffe67` | 0.98 MB   |
 | BIOS                      | `0xffe68` | `0xfffff` | 416 bytes |

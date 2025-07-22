@@ -18,7 +18,7 @@
 #define MODE_VAL_IMM 0x00
 #define MODE_VAL_IND 0x01
 
-#define START_ADDR 0x10132
+#define START_ADDR 0x10134
 #define BIOS_ADDR 0xffe68
 #define IVT_ADDR 0x00010
 

@@ -24,7 +24,7 @@ start:
 
     mov CS, #0x1000
 
-    jmp #0x0132
+    jmp #0x0134
 
     hlt
 
