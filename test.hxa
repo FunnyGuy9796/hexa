@@ -1,4 +1,4 @@
-org 0x0000:0xfb28
+org 0x1000:0x0132
 
 start:
     mov SS, #0x000f
@@ -27,18 +27,23 @@ start:
     mov R7, #0x0a
     int #0x03
 
-    mov R0, #0x0128
+    mov R0, #0x0132
+    mov R1, #0x0220
 
-    jmp draw
+draw_loop:
+    mov DS, #0x1000
+    ld R2, R1
 
-draw:
-    st R0, #0xffff
+    mov DS, #0x0000
+    st R0, R2
 
     add R0, #2
-    cmp R0, #0xfb27
-    je done
+    add R1, #2
 
-    jmp draw
+    cmp R0, #0xfb28
+    jge done
+
+    jmp draw_loop
 
 done:
     hlt

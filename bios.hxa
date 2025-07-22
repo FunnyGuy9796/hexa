@@ -22,14 +22,14 @@ start:
     st #0x001c, #0x0fc0
     st #0x001e, #0xff00
 
-    mov CS, #0x0000
+    mov CS, #0x1000
 
-    jmp #0xfb28
+    jmp #0x0132
 
     hlt
 
 print_boot:
-    mov R0, #0x0122
+    mov R0, #0x0120
 
     st R0, #0x62
     st R0, #0x6f
@@ -57,12 +57,12 @@ print_boot:
 
     ret
 
-print_serial:
+serial_int:
     push DS
 
     mov DS, #0x0000
 
-    mov R6, #0x0122
+    mov R6, #0x0120
 
     st R6, R7
 

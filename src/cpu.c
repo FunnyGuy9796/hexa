@@ -138,6 +138,7 @@ void cpu_exception(CPU *cpu, uint16_t status, Instruction inst) {
     cpu_push(cpu, cpu->flags);
     cpu_push(cpu, status);
 
-    printf("\nError: Exception occurred\n  addr: 0x%05x\n  status: %d\n  inst_opcode: 0x%02x\n  inst_mode1: 0x%02x  inst_op1: 0x%04x\n  inst_mode2: 0x%02x  inst_op2: 0x%04x\n",
-        cpu->pc, status, inst.opcode, inst.mode1, inst.operand1, inst.mode2, inst.operand2);
+    printf("\nError: Exception occurred\n  addr: 0x%05x\n  status: %d\n  0x%02x 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x\n",
+        cpu->pc, status, cpu->memory[cpu->pc], cpu->memory[cpu->pc + 1], cpu->memory[cpu->pc + 2], cpu->memory[cpu->pc + 3],
+        cpu->memory[cpu->pc + 4], cpu->memory[cpu->pc + 5], cpu->memory[cpu->pc + 6], cpu->memory[cpu->pc + 7]);
 }

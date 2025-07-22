@@ -30,16 +30,36 @@ const char* get_file_ext(const char* filename) {
     return dot + 1;
 }
 
+int quoted_space(const char *str) {
+    int len = strlen(str);
+
+    if (len >= 3 && str[0] == '\'' && str[len - 1] == '\'') return 1;
+
+    return 0;
+}
+
 void trim(char *str) {
+    if (quoted_space(str)) return;
+    
+    char *start = str;
     char *end;
 
-    while (isspace((unsigned char)*str)) str++;
+    while (isspace((unsigned char)*start)) start++;
 
-    end = str + strlen(str) - 1;
+    if (*start == 0) {
+        *str = 0;
 
-    while (end > str && isspace((unsigned char)*end)) end--;
+        return;
+    }
+
+    end = start + strlen(start) - 1;
+
+    while (end > start && isspace((unsigned char)*end)) end--;
 
     *(end + 1) = 0;
+
+    if (start != str)
+        memmove(str, start, strlen(start) + 1);
 }
 
 void add_label(const char *label, uint32_t addr) {
@@ -287,9 +307,40 @@ int second_pass(FILE *in, FILE *out) {
         }
 
         if (parts == 3) {
-            if (inst.mode2 == MODE_VAL_IMM)
-                inst.operand2 = (uint16_t)strtol(op2 + 1, NULL, 0);
-            else if (op2[0] == 'R' || strcmp(op2, "SP") == 0 || strcmp(op2, "PC") == 0 || strcmp(op2, "FLAGS") == 0 || strcmp(op2, "CS") == 0 || strcmp(op2, "SS") == 0 || strcmp(op2, "DS") == 0)
+            if (inst.mode2 == MODE_VAL_IMM) {
+                if (op2[1] == '\'' && op2[strlen(op2) - 1] == '\'') {
+                    char ch;
+
+                    if (op2[2] == '\\') {
+                        switch (op2[3]) {
+                            case 'n': ch = '\n'; break;
+                            case 't': ch = '\t'; break;
+                            case 'r': ch = '\r'; break;
+                            case '0': ch = '\0'; break;
+                            case '\'': ch = '\''; break;
+                            case '\\': ch = '\\'; break;
+                            case 'b': ch = '\b'; break;
+                            case 'f': ch = '\f'; break;
+                            case 'v': ch = '\v'; break;
+                            case 'a': ch = '\a'; break;
+                            default: {
+                                printf("Error: Unknown escape sequence '\\%c'\n", op2[3]);
+
+                                return 1;
+                            }
+                        }
+                    } else {
+                        ch = op2[2];
+
+                        printf("ch = op2[2]: %c", ch);
+                    }
+
+                    inst.operand2 = (uint16_t)ch;
+
+                    printf("Final operand2: '%c' -> 0x%02x (%d)\n", ch, inst.operand2, inst.operand2);
+                } else
+                    inst.operand2 = (uint16_t)strtol(op2 + 1, NULL, 0);
+            } else if (op2[0] == 'R' || strcmp(op2, "SP") == 0 || strcmp(op2, "PC") == 0 || strcmp(op2, "FLAGS") == 0 || strcmp(op2, "CS") == 0 || strcmp(op2, "SS") == 0 || strcmp(op2, "DS") == 0)
                 inst.operand2 = get_register(op2);
             else
                 inst.operand2 = (uint16_t)strtol(op2, NULL, 0);
