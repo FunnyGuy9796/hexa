@@ -6,14 +6,14 @@ special registers               0x00008     0x0000f     8 bytes
 interrupt vector table          0x00010     0x0010f     256 bytes
 
 keyboard                        0x00110     0x00115     6 bytes (key value, key status, key ctrl status)
-timer                           0x00116     0x0011f     10 bytes (timer ctrl, timer status, counter L, counter H, compare)
-serial port                     0x00120     0x00125     6 bytes (serial data, serial status, serial ctrl)
-disk                            0x00126     0x0012f     10 bytes (disk status, disk command, disk lba L, disk lba H, disk count)
+timer                           0x00116     0x0011d     8 bytes (timer ctrl, timer status, counter, compare)
+serial port                     0x0011e     0x00123     6 bytes (serial data, serial status, serial ctrl)
+disk                            0x00124     0x0012b     8 bytes (disk status, disk command, disk lba, disk count)
 
-usable memory                   0x00130     0xdffff     917.24 KB (917245 bytes)
+usable memory                   0x0012c     0xdffff     917.2 KB (917204 bytes)
 
-framebuffer                     0xe0000     0xeffff     64 KB (65535 bytes)
+framebuffer                     0xe0000     0xeffff     65.53 KB (65535 bytes)
 
-usable memory                   0xf0000     0xffe67     65.18 KB (65182 bytes)
+usable memory                   0xf0000     0xffcad     64.68 KB (64686 bytes)
 
-bios                            0xffe68     0xfffff     416 bytes
+bios                            0xffcae     0xfffff     850 bytes

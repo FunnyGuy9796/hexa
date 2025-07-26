@@ -68,4 +68,4 @@ rgb332 = rgb24_to_rgb332_from_hex(hex_color)
 
 print(f"RGB332 value: 0x{rgb332:02X}")
 
-convert_image_to_rgb332("cat.jpg", "cat.rgb332")
+convert_image_to_rgb332("hexa_logo.jpg", "hexa_logo.rgb332")

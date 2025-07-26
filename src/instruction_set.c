@@ -1,4 +1,5 @@
 #include "instruction_set.h"
+#include "disk.h"
 
 bool pc_modified;
 bool framebuffer_dirty = false;
@@ -23,10 +24,13 @@ int exec_instruction(CPU *cpu, Instruction inst) {
     pc_modified = false;
     cpu->ip = inst.opcode;
 
+    if (cpu->pc >= BIOS_ADDR)
+        cpu->flags &= ~FLAG_RESET;
+
     if ((cpu->ip == INT || cpu->ip == IRET) && (cpu->flags & FLAG_USER_MODE))
         return 5;
 
-    if (cpu->pc < START_ADDR || ((cpu->flags & FLAG_USER_MODE) && (cpu->pc >= BIOS_ADDR)))
+    if ((!(cpu->flags & FLAG_RESET) && (cpu->pc < START_ADDR)) || ((cpu->flags & FLAG_USER_MODE) && (cpu->pc >= BIOS_ADDR)))
         return 4;
     
     switch (inst.opcode) {
@@ -113,7 +117,7 @@ int exec_instruction(CPU *cpu, Instruction inst) {
             if (phys_addr % 2 != 0)
                 return 3;
             
-            cpu->registers[inst.operand1] = cpu->memory[phys_addr] | (cpu->memory[phys_addr + 1] << 8);
+            cpu->registers[inst.operand1] = (cpu->memory[phys_addr] << 8) | cpu->memory[phys_addr + 1];
 
             break;
         }
@@ -129,11 +133,18 @@ int exec_instruction(CPU *cpu, Instruction inst) {
             if (phys_addr % 2 != 0)
                 return 3;
 
-            cpu->memory[phys_addr] = value & 0xff;
-            cpu->memory[phys_addr + 1] = (value >> 8) & 0xff;
+            cpu->memory[phys_addr] = (value >> 8) & 0xff;
+            cpu->memory[phys_addr + 1] = value & 0xff;
 
             if (phys_addr == SERIAL_DATA)
                 cpu->memory[SERIAL_STATUS] |= SERIAL_STATUS_NEW_DATA;
+            
+            if (phys_addr == DISK_COMMAND) {
+                if (value == DISK_CMD_WRITE)
+                    write_disk(cpu);
+                else if (value == DISK_CMD_READ)
+                    read_disk(cpu);
+            }
             
             if (phys_addr >= FRAMEBUFFER_ADDR && phys_addr <= FRAMEBUFFER_ADDR + (FRAMEBUFFER_WIDTH * FRAMEBUFFER_HEIGHT))
                 framebuffer_dirty = true;
@@ -142,12 +153,6 @@ int exec_instruction(CPU *cpu, Instruction inst) {
         }
 
         case PUSH: {
-            uint16_t offset = inst.operand1;
-            uint32_t phys_addr = seg_offset(cpu->ds, offset);
-
-            if (phys_addr % 2 != 0)
-                return 3;
-            
             uint16_t value;
 
             if (inst.mode1 == MODE_VAL_IND) {
@@ -273,7 +278,7 @@ int exec_instruction(CPU *cpu, Instruction inst) {
                     return 3;
             }
 
-            uint16_t value = (inst.mode2 == MODE_VAL_IND) ? (is_reg(inst.operand2) ? cpu->registers[inst.operand2] : (cpu->memory[phys_addr] | cpu->memory[phys_addr + 1] << 8)) : inst.operand2;
+            uint16_t value = (inst.mode2 == MODE_VAL_IND) ? (is_reg(inst.operand2) ? cpu->registers[inst.operand2] : ((cpu->memory[phys_addr] << 8) | cpu->memory[phys_addr + 1])) : inst.operand2;
 
             cpu->registers[inst.operand1] = (inst.opcode == ADD) ? cpu->registers[inst.operand1] + value : cpu->registers[inst.operand1] - value;
 
@@ -307,7 +312,7 @@ int exec_instruction(CPU *cpu, Instruction inst) {
                     return 3;
             }
             
-            uint16_t value = (inst.mode2 == MODE_VAL_IND) ? (is_reg(inst.operand2) ? cpu->registers[inst.operand2] : (cpu->memory[phys_addr] | cpu->memory[phys_addr + 1] << 8)) : inst.operand2;
+            uint16_t value = (inst.mode2 == MODE_VAL_IND) ? (is_reg(inst.operand2) ? cpu->registers[inst.operand2] : ((cpu->memory[phys_addr] << 8) | cpu->memory[phys_addr + 1])) : inst.operand2;
 
             cpu->registers[inst.operand1] &= value;
 
@@ -331,7 +336,7 @@ int exec_instruction(CPU *cpu, Instruction inst) {
                     return 3;
             }
 
-            uint16_t value = (inst.mode2 == MODE_VAL_IND) ? (is_reg(inst.operand2) ? cpu->registers[inst.operand2] : (cpu->memory[phys_addr] | cpu->memory[phys_addr + 1] << 8)) : inst.operand2;
+            uint16_t value = (inst.mode2 == MODE_VAL_IND) ? (is_reg(inst.operand2) ? cpu->registers[inst.operand2] : ((cpu->memory[phys_addr] << 8) | cpu->memory[phys_addr + 1])) : inst.operand2;
 
             cpu->registers[inst.operand1] |= value;
 
@@ -355,7 +360,7 @@ int exec_instruction(CPU *cpu, Instruction inst) {
                     return 3;
             }
             
-            uint16_t value = (inst.mode2 == MODE_VAL_IND) ? (is_reg(inst.operand2) ? cpu->registers[inst.operand2] : (cpu->memory[phys_addr] | cpu->memory[phys_addr + 1] << 8)) : inst.operand2;
+            uint16_t value = (inst.mode2 == MODE_VAL_IND) ? (is_reg(inst.operand2) ? cpu->registers[inst.operand2] : ((cpu->memory[phys_addr] << 8) | cpu->memory[phys_addr + 1])) : inst.operand2;
 
             cpu->registers[inst.operand1] ^= value;
 
@@ -389,7 +394,7 @@ int exec_instruction(CPU *cpu, Instruction inst) {
                     return 3;
             }
             
-            uint16_t value = (inst.mode2 == MODE_VAL_IND) ? (is_reg(inst.operand2) ? cpu->registers[inst.operand2] : (cpu->memory[phys_addr] | cpu->memory[phys_addr + 1] << 8)) : inst.operand2;
+            uint16_t value = (inst.mode2 == MODE_VAL_IND) ? (is_reg(inst.operand2) ? cpu->registers[inst.operand2] : ((cpu->memory[phys_addr] << 8) | cpu->memory[phys_addr + 1])) : inst.operand2;
 
             cpu->registers[inst.operand1] = (inst.opcode == SHL) ? cpu->registers[inst.operand1] << value : cpu->registers[inst.operand1] >> value;
 
@@ -414,7 +419,7 @@ int exec_instruction(CPU *cpu, Instruction inst) {
             }
             
             uint16_t val1 = cpu->registers[inst.operand1];
-            uint16_t val2 = (inst.mode2 == MODE_VAL_IND) ? (is_reg(inst.operand2) ? cpu->registers[inst.operand2] : (cpu->memory[phys_addr] | cpu->memory[phys_addr + 1] << 8)) : inst.operand2;
+            uint16_t val2 = (inst.mode2 == MODE_VAL_IND) ? (is_reg(inst.operand2) ? cpu->registers[inst.operand2] : ((cpu->memory[phys_addr] << 8) | cpu->memory[phys_addr + 1])) : inst.operand2;
             
             cpu->flags &= ~(FLAG_EQUAL | FLAG_LESS | FLAG_GREATER | FLAG_ZERO);
 
@@ -452,7 +457,7 @@ int exec_instruction(CPU *cpu, Instruction inst) {
                     segment = cpu->us;
                 else
                     segment = cpu->cs;
-                
+
                 cpu->pc = seg_offset(segment, offset);
                 pc_modified = true;
             }
@@ -486,7 +491,7 @@ int exec_instruction(CPU *cpu, Instruction inst) {
                     segment = cpu->us;
                 else
                     segment = cpu->cs;
-                
+
                 cpu->pc = seg_offset(segment, offset);
                 pc_modified = true;
             }
@@ -503,7 +508,7 @@ int exec_instruction(CPU *cpu, Instruction inst) {
                     segment = cpu->us;
                 else
                     segment = cpu->cs;
-                
+
                 cpu->pc = seg_offset(segment, offset);
                 pc_modified = true;
             }
@@ -520,7 +525,7 @@ int exec_instruction(CPU *cpu, Instruction inst) {
                     segment = cpu->us;
                 else
                     segment = cpu->cs;
-                
+
                 cpu->pc = seg_offset(segment, offset);
                 pc_modified = true;
             }
@@ -537,7 +542,7 @@ int exec_instruction(CPU *cpu, Instruction inst) {
                     segment = cpu->us;
                 else
                     segment = cpu->cs;
-                
+
                 cpu->pc = seg_offset(segment, offset);
                 pc_modified = true;
             }
@@ -554,7 +559,7 @@ int exec_instruction(CPU *cpu, Instruction inst) {
                     segment = cpu->us;
                 else
                     segment = cpu->cs;
-                
+
                 cpu->pc = seg_offset(segment, offset);
                 pc_modified = true;
             }
@@ -592,6 +597,7 @@ int exec_instruction(CPU *cpu, Instruction inst) {
                 segment = cpu->cs;
 
             cpu_push(cpu, return_offset);
+
             cpu->pc = seg_offset(segment, target_offset);
             pc_modified = true;
 
@@ -619,13 +625,14 @@ int exec_instruction(CPU *cpu, Instruction inst) {
             cpu->flags = cpu_pop(cpu);
 
             uint16_t offset = cpu_pop(cpu);
+            uint16_t segment = cpu_pop(cpu);
 
             if (cpu->flags & FLAG_USER_MODE)
-                cpu->us = cpu_pop(cpu);
+                cpu->us = segment;
             else
-                cpu->cs = cpu_pop(cpu);
+                cpu->cs = segment;
             
-            cpu->pc = seg_offset(cpu->cs, offset);
+            cpu->pc = seg_offset(segment, offset);
             pc_modified = true;
 
             cpu->flags |= FLAG_INT_DONE;
@@ -657,8 +664,8 @@ int exec_instruction(CPU *cpu, Instruction inst) {
                 return 8;
 
             uint32_t ivt_entry = IVT_ADDR + (int_num * 4);
-            uint16_t offset = cpu->memory[ivt_entry] | (cpu->memory[ivt_entry + 1] << 8);
-            uint16_t segment = cpu->memory[ivt_entry + 2] | (cpu->memory[ivt_entry + 3] << 8);
+            uint16_t segment = (cpu->memory[ivt_entry] << 8) | cpu->memory[ivt_entry + 1];
+            uint16_t offset = (cpu->memory[ivt_entry + 2] << 8) | cpu->memory[ivt_entry + 3];
 
             cpu->cs = segment;
             cpu->pc = seg_offset(segment, offset);

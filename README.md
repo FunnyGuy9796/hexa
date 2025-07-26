@@ -80,10 +80,10 @@ An instruction that may look like `mov R0, #1` will be assembled to the bytes `0
 | Special Registers         | `0x00008` | `0x0000f` | 8 bytes   |
 | Interupt Vector Table     | `0x00010` | `0x0010f` | 256 bytes |
 | Keyboard                  | `0x00110` | `0x00115` | 6 bytes   |
-| Timer                     | `0x00116` | `0x0011f` | 10 bytes  |
-| Serial Port               | `0x00120` | `0x00125` | 6 bytes   |
-| Disk                      | `0x00126` | `0x0012f` | 10 bytes  |
-| Usable Memory             | `0x00130` | `0xdffff` | 917.24 KB |
-| Framebuffer               | `0xe0000` | `0xeffff` | 64 KB     |
-| Usable Memory             | `0xf0000` | `0xffe67` | 65.18 KB  |
-| BIOS                      | `0xffe68` | `0xfffff` | 416 bytes |
+| Timer                     | `0x00116` | `0x0011d` | 8 bytes   |
+| Serial Port               | `0x0011e` | `0x00123` | 6 bytes   |
+| Disk                      | `0x00124` | `0x0012b` | 8 bytes   |
+| Usable Memory             | `0x0012c` | `0xdffff` | 917.24 KB |
+| Framebuffer               | `0xe0000` | `0xeffff` | 65.53 KB  |
+| Usable Memory             | `0xf0000` | `0xffcad` | 64.68 KB  |
+| BIOS                      | `0xffcae` | `0xfffff` | 850 bytes |

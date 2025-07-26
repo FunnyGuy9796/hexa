@@ -1,8 +1,8 @@
-org 0xf000:0xfe68
+org 0xf000:0xfcae
 
 start:
     mov SS, #0x000f
-    mov SP, #0xfe66
+    mov SP, #0xfcac
     mov DS, #0x0000
     mov CS, #0xf000
 
@@ -16,45 +16,112 @@ start:
     mov R7, #0x0000
 
     call print_boot
+    call splash_screen
 
-    mov SP, #0x0000
-    mov SS, #0x0000
+    st #0x0128, #0
+    st #0x012a, #1
+    mov R4, #0
+    mov R6, #0xf000
+    mov R7, #0x0000
 
-    st #0x001c, #0x0fc8
-    st #0x001e, #0xff00
-
-    mov CS, #0x0000
-
-    jmp #0x0130
-
-    hlt
+    jmp find_prog
 
 print_boot:
-    mov R0, #0x0120
+    mov R0, #0x011e
 
-    st R0, #0x62
-    st R0, #0x6f
-    st R0, #0x6f
-    st R0, #0x74
-    st R0, #0x69
-    st R0, #0x6e
-    st R0, #0x67
-    st R0, #0x20
-    st R0, #0x66
-    st R0, #0x72
-    st R0, #0x6f
-    st R0, #0x6d
-    st R0, #0x20
-    st R0, #0x64
-    st R0, #0x69
-    st R0, #0x73
-    st R0, #0x6b
-    st R0, #0x2e
-    st R0, #0x2e
-    st R0, #0x2e
-    st R0, #0x0a
+    st R0, #0x6200
+    st R0, #0x6f00
+    st R0, #0x6f00
+    st R0, #0x7400
+    st R0, #0x6900
+    st R0, #0x6e00
+    st R0, #0x6700
+    st R0, #0x2000
+    st R0, #0x6800
+    st R0, #0x6500
+    st R0, #0x7800
+    st R0, #0x6100
+    st R0, #0x2e00
+    st R0, #0x2e00
+    st R0, #0x2e00
+    st R0, #0x0a00
 
-    mov R0, #0x0
+    mov R0, #0x0000
+
+    ret
+
+splash_screen:
+    st #0x0128, #1
+    st #0x012a, #125
+    mov R6, #0xe000
+    mov R7, #0x0000
+    st #0x0126, #0x01
+    
+    ret
+
+find_prog:
+    st #0x0126, #0x01
+    mov DS, #0xf000
+    mov R5, #0x0000
+    ld R3, R5
+    cmp R3, #0x88cc
+    je get_prog_addr
+
+    add R4, #1
+    st #0x0128, R4
+    jmp find_prog
+
+get_prog_addr:
+    add R5, #2
+    ld R3, R5
+    shl R3, #8
+    add R5, #2
+    ld R4, R5
+    shr R4, #8
+    or R3, R4
+    mov R2, R3
+get_prog_size:
+    add R5, #2
+    ld R0, R5
+    shl R0, #8
+    add R5, #2
+    ld R1, R5
+    shr R1, #8
+    or R0, R1
+    mov R6, #0x0000
+    add R5, #2
+
+load_prog:
+    mov DS, #0xf000
+    cmp R6, R0
+    jge done
+
+    ld R7, R5
+    mov DS, #0x0000
+    st R3, R7
+    add R5, #2
+    add R6, #2
+    add R3, #2
+
+    jmp load_prog
+
+done:
+    mov DS, #0x0000
+    
+    st #0x001c, #0xf000
+    st #0x001e, #0xffa6
+
+    mov CS, #0x0000
+    push R2
+
+    mov R0, #0x0000
+    mov R1, #0x0000
+    mov R2, #0x0000
+    mov R3, #0x0000
+    mov R4, #0x0000
+    mov R5, #0x0000
+    mov R6, #0x0000
+    mov R7, #0x0000
 
     ret
 
@@ -62,15 +129,11 @@ serial_int:
     push DS
 
     mov DS, #0x0000
-
-    mov R6, #0x0120
-
+    mov R6, #0x011e
+    shl R7, #8
     st R6, R7
-
     mov R6, #0x0000
 
     pop DS
 
     iret
-
-dw 0x88cc

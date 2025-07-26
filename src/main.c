@@ -8,6 +8,7 @@
 #include "cpu.h"
 #include "instruction_set.h"
 #include "serial.h"
+#include "disk.h"
 
 SDL_Window *window = NULL;
 SDL_Renderer *renderer = NULL;
@@ -126,8 +127,7 @@ void* emulator_loop(void *arg) {
                 cpu.cycle_count = 0;
 
                 poll_serial(&cpu);
-
-                cpu_interrupt(&cpu, 0x01, inst);
+                cpu_interrupt(&cpu, 0x01);
             }
         }
 
@@ -143,9 +143,6 @@ int main(int argc, char* argv[]) {
 
         return 0;
     }
-
-    char *disk_name = NULL;
-    char *filename = NULL;
 
     for (int i = 0; i < argc; i++) {
         if (strcmp(argv[i], "-disk") == 0 && i + 1 < argc)
@@ -191,21 +188,8 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-    uint16_t prog_status = load_program(&cpu, disk_data, disk_size);
-
-    if (prog_status == 0) {
-        printf("No bootable program found...\n");
-
-        return 1;
-    }
-
-    size_t img_size = 0;
-    uint8_t *img_data = read_file("cat.rgb332", &img_size);
-
-    for (size_t i = 0; i < img_size; i++)
-        cpu.memory[0xf0000 + i] = img_data[i];
-
     init_sdl();
+    update_display(&cpu.memory[FRAMEBUFFER_ADDR]);
 
     pthread_create(&emu_thread, NULL, emulator_loop, NULL);
 

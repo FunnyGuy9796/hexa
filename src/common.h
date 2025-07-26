@@ -18,8 +18,8 @@
 #define MODE_VAL_IMM 0x00
 #define MODE_VAL_IND 0x01
 
-#define START_ADDR 0x00130
-#define BIOS_ADDR 0xffe68
+#define START_ADDR 0x0012c
+#define BIOS_ADDR 0xffcae
 #define IVT_ADDR 0x00010
 
 #define FRAMEBUFFER_ADDR 0xe0000
@@ -35,15 +35,32 @@
 #define FLAG_INT_DONE (1 << 5)
 #define FLAG_HALTED (1 << 6)
 #define FLAG_USER_MODE (1 << 7)
+#define FLAG_RESET (1 << 8)
+#define FLAG_EXCEPTION (1 << 9)
+#define FLAG_DOUBLE_EXCEPTION (1 << 10)
 
-#define SERIAL_DATA 0x00120
-#define SERIAL_STATUS 0x00122
-#define SERIAL_CTRL 0x00124
+#define SERIAL_DATA 0x0011e
+#define SERIAL_STATUS 0x00120
+#define SERIAL_CTRL 0x00122
 
 #define SERIAL_STATUS_TX_READY (1 << 0)
 #define SERIAL_STATUS_RX_READY (1 << 1)
 #define SERIAL_STATUS_OVERRUN (1 << 2)
 #define SERIAL_STATUS_NEW_DATA (1 << 3)
+
+#define DISK_STATUS 0x00124
+#define DISK_COMMAND 0x00126
+#define DISK_LBA 0x00128
+#define DISK_COUNT 0x0012a
+
+#define DISK_CMD_READ 0x01
+#define DISK_CMD_WRITE 0x02
+
+#define DISK_STATUS_READY (1 << 0)
+#define DISK_STATUS_BUSY (1 << 1)
+#define DISK_STATUS_ERROR (1 << 2)
+#define DISK_STATUS_DONE (1 << 3)
+#define DISK_STATUS_WRITE_PROTECT (1 << 4)
 
 enum REGS {
     R0 = 0x00,
@@ -91,7 +108,7 @@ typedef struct {
 void cpu_push(CPU *cpu, uint16_t val);
 uint16_t cpu_pop(CPU *cpu);
 uint32_t seg_offset(uint16_t segment, uint16_t offset);
-void cpu_interrupt(CPU *cpu, uint16_t status, Instruction inst);
-void cpu_exception(CPU *cpu, uint16_t status, Instruction inst);
+void cpu_interrupt(CPU *cpu, uint16_t status);
+void cpu_exception(CPU *cpu, uint16_t status);
 
 #endif

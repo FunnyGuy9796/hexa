@@ -1,13 +1,10 @@
-org 0x0000:0x0130
+org 0x0000:0x012c
 
 start:
     mov SS, #0x000f
-    mov SP, #0xfe66
+    mov SP, #0xfcac
 
     mov DS, #0x0000
-
-    mov R7, #0x0a
-    int #0x03
 
     mov R7, #0x48
     int #0x03
@@ -27,26 +24,4 @@ start:
     mov R7, #0x0a
     int #0x03
 
-    mov R0, #0x0000
-    mov R1, #0x0000
-
-draw_loop:
-    mov DS, #0xf000
-    ld R2, R1
-
-    mov DS, #0xe000
-    cmp R0, #0xffff
-
-    st R0, R2
-
-    add R0, #2
-    add R1, #2
-
-    jge done
-
-    jmp draw_loop
-
-done:
     hlt
-
-dw 0x88cc

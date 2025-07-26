@@ -216,10 +216,15 @@ int second_pass(FILE *in, FILE *out) {
     int curr_line = 0;
     pc = origin_addr;
 
+    fputc(0x88, out);
+    fputc(0xcc, out);
+
     fputc((pc >> 16) & 0x0f, out);
     fputc((pc >> 8) & 0xff, out);
     fputc(pc & 0xff, out);
+    fputc(0, out);
 
+    fputc(0, out);
     fputc(0, out);
     fputc(0, out);
     fputc(0, out);
@@ -424,7 +429,7 @@ int main(int argc, char *argv[]) {
 
         uint32_t file_size = (uint32_t)ftell(output_file);
 
-        fseek(output_file, 3, SEEK_SET);
+        fseek(output_file, 6, SEEK_SET);
         fputc((file_size >> 16) & 0x0f, output_file);
         fputc((file_size >> 8) & 0xff, output_file);
         fputc(file_size & 0xff, output_file);
@@ -435,7 +440,7 @@ int main(int argc, char *argv[]) {
     } else {
         const char *dump_ext = get_file_ext(dump_file);
 
-        if (strcmp(dump_ext, "hxa") != 0) {
+        if (strcmp(dump_ext, "bin") != 0) {
             printf("Invalid file type %s\n", dump_file);
 
             return 1;
@@ -475,10 +480,15 @@ int main(int argc, char *argv[]) {
             return 1;
         }
 
-        for (size_t i = 0; i < file_size; i++) {
+        for (size_t i = 0; i < 10; i++)
+            printf("%02x ", buffer[i]);
+        
+        printf("\n");
+
+        for (size_t i = 10; i < file_size; i++) {
             printf("%02x ", buffer[i]);
 
-            if ((i + 1) % 7 == 0)
+            if (((i - 10) + 1) % 8 == 0)
                 printf("\n");
         }
 
