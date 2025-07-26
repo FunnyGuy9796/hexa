@@ -24,7 +24,9 @@ make all
 # Assemble BIOS and test.asm
 ./hexa_asm -f bios.asm -o bios.bin
 ./hexa_asm -f test.asm -o test.bin
-cat test.bin > disk.img
+
+dd if=test.bin of=disk.img bs=512 count=1 conv=sync
+dd if=hexa_logo.rgb332 of=disk.img bs=512 seek=1 conv=sync
 
 # Run the emulator
 ./hexa -disk disk.img
