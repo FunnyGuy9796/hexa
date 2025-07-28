@@ -10,6 +10,7 @@ Hexa is a custom 16-bit CPU architecture that aims to be efficient and versatile
   - Timer
   - Keyboard
   - Serial (BIOS Software Interrupt)
+  - Disk (BIOS Software Interrupt)
 - Exceptions
 - Simple Assembler
 
@@ -27,6 +28,7 @@ make all
 
 dd if=test.bin of=disk.img bs=512 count=1 conv=sync
 dd if=hexa_logo.rgb332 of=disk.img bs=512 seek=1 conv=sync
+dd if=hello.txt of=disk.img bs=512 seek=126 conv=sync
 
 # Run the emulator
 ./hexa -disk disk.img
@@ -87,5 +89,5 @@ An instruction that may look like `mov R0, #1` will be assembled to the bytes `0
 | Disk                      | `0x00124` | `0x0012b` | 8 bytes   |
 | Usable Memory             | `0x0012c` | `0xdffff` | 917.24 KB |
 | Framebuffer               | `0xe0000` | `0xeffff` | 65.53 KB  |
-| Usable Memory             | `0xf0000` | `0xffcad` | 64.68 KB  |
-| BIOS                      | `0xffcae` | `0xfffff` | 850 bytes |
+| Usable Memory             | `0xf0000` | `0xffbe5` | 64.48 KB  |
+| BIOS                      | `0xffbe6` | `0xfffff` | 1050 bytes |

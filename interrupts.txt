@@ -1,5 +1,5 @@
 number:     type:       
 0x01        timer
 0x02        keyboard
-0x03        serial port
-0x04        disk
+0x03        serial port (BIOS software interrupt)
+0x04        disk (BIOS software interrupt)

@@ -14,6 +14,6 @@ usable memory                   0x0012c     0xdffff     917.2 KB (917204 bytes)
 
 framebuffer                     0xe0000     0xeffff     65.53 KB (65535 bytes)
 
-usable memory                   0xf0000     0xffcad     64.68 KB (64686 bytes)
+usable memory                   0xf0000     0xffbe5     64.48 KB (64486 bytes)
 
-bios                            0xffcae     0xfffff     850 bytes
+bios                            0xffbe6     0xfffff     1050 bytes

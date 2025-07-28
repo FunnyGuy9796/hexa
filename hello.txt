@@ -1,0 +1,18 @@
+Hexa is a custom 16-bit CPU architecture
+that aims to be efficient and versatile.
+
+Available Interrupts:
+- Timer
+- Keyboard
+- Serial Port (BIOS Interrupt)
+- Disk (BIOS Interrupt)
+
+Exceptions:
+- Invalid Opcode
+- Invalid Operand
+- Unaligned Access
+- General Protection
+- Illegal Instruction
+- Divide by Zero
+- Stack Overflow/Underflow
+- Breakpoint

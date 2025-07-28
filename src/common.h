@@ -19,7 +19,7 @@
 #define MODE_VAL_IND 0x01
 
 #define START_ADDR 0x0012c
-#define BIOS_ADDR 0xffcae
+#define BIOS_ADDR 0xffbde
 #define IVT_ADDR 0x00010
 
 #define FRAMEBUFFER_ADDR 0xe0000

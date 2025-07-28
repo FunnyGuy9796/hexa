@@ -2,26 +2,43 @@ org 0x0000:0x012c
 
 start:
     mov SS, #0x000f
-    mov SP, #0xfcac
+    mov SP, #0xfba0
 
     mov DS, #0x0000
 
-    mov R7, #0x48
+    mov R4, #126
+    mov R5, #1
+    mov R6, #0xf000
+    mov R7, #0x0000
+    int #0x04
+
+    mov R7, #0x0a
     int #0x03
 
-    mov R7, #0x65
-    int #0x03
+    mov DS, #0xf000
+    mov R1, #0x0000
 
-    mov R7, #0x6c
-    int #0x03
-
-    mov R7, #0x6c
-    int #0x03
-
-    mov R7, #0x6f
-    int #0x03
+    call print_file
 
     mov R7, #0x0a
     int #0x03
 
     hlt
+
+print_file:
+    ld R2, R1
+    mov R3, R2
+    shr R3, #8
+
+    mov R7, R3
+    int #0x03
+
+    mov R7, R2
+    int #0x03
+
+    add R1, #2
+
+    cmp R1, #0x015a
+    jl print_file
+    
+    ret
